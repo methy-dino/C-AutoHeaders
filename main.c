@@ -11,6 +11,7 @@
 #define FLAG_TYPEDEF 2
 #define FLAG_TRASH -1
 #define FLAG_EMPTY 3
+#define FLAG_FUNC 4
 String* growArr(String* strArr, int len, int inc){
 	String* cloneArr = (String*) malloc(sizeof(String*) * (len + inc));
 	for (int i = 0; i < len; i++){
@@ -88,15 +89,17 @@ int main(int argC, char**args){
 				printf("failed to read file \"%s\"", baseDir->string);
 			} else {
 				char tempStorage[512];
-				while (fgets(tempStorage, 511, read)){
+				while (fgets(tempStorage, 511, read)!= NULL){
+						printf("test\n");
 						j = 0;
 						writer->length = 0;
 						writer->string[0] = '\0';
 						while (tempStorage[j] != '\0'){
-							while((mode == FLAG_TRASH || mode == FLAG_EMPTY) && (tempStorage[j] == '	' || tempStorage[i] == ' ')){
+							while((mode == FLAG_TRASH || mode == FLAG_EMPTY) && (tempStorage[j] == '	' || tempStorage[i] == ' ')&& tempStorage[j] != '\0'){
 								j++;
 								mode = FLAG_EMPTY;		
 							}
+							k=0;
 							while ((mode == FLAG_TRASH || mode == FLAG_EMPTY) && tempStorage[j+k] == type[k]){
 								k++;
 								if (type[k] == '\0'){
@@ -106,6 +109,7 @@ int main(int argC, char**args){
 									break;
 								}
 							}
+							k=0;
 							while ((mode == FLAG_TRASH || mode == FLAG_TYPEDEF || mode == FLAG_EMPTY) && tempStorage[j+k] == struc[k]){
 								k++;
 								if (struc[k] == '\0'){
@@ -120,25 +124,42 @@ int main(int argC, char**args){
 								bracketDepth++;
 								if (mode == FLAG_TRASH && bracketDepth == 1){
 									appendNoLen(writer, tempStorage, 510);
+									mode = FLAG_FUNC;
+									writer->length -= 2;
+									writer->string[writer->length] = '\0';
+									fwrite(writer->string,1,writer->length,write);
 									break;
 								}
 							} else if (tempStorage[j] == '}'){
 								bracketDepth--;
-								if (bracketDepth == 0){
-								mode = FLAG_TRASH;
+								if (bracketDepth == 0 && mode != FLAG_FUNC){
+									mode = FLAG_TRASH;
+									break;
 								}
 							}
 							j++;
 						}
-						if (mode != FLAG_TRASH){
+						printf("AAA\n");
+						if (mode != FLAG_TRASH && mode != FLAG_EMPTY && mode != FLAG_FUNC){
+							printf("B\n");
 							appendNoLen(writer, tempStorage, 510);
+							printf("C\n");
+							fwrite(writer->string, 1, writer->length, write);
+							printf("RAAAAAAH\n");
 						}
 						if (mode == FLAG_TRASH && bracketDepth == 0){
+							printf("D\n");
 							appendNoLen(writer, tempStorage, 510);
+							printf("E\n");
+							fwrite(writer->string, 1, writer->length, write);
 						}
-						fwrite(writer->string, 1, writer->length, write);
+						if (mode == FLAG_FUNC && bracketDepth == 0){
+							mode = FLAG_TRASH;
+						}
+						printf("huh\n");
 					}
 			}
+			printf("hello");
 			baseDir->length -= files[i].length;
 			baseDir->string[baseDir->length] = '\0';
 		}
