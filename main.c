@@ -10,6 +10,7 @@
 #define FLAG_STRUCT 1
 #define FLAG_TYPEDEF 2
 #define FLAG_TRASH -1
+#define FLAG_EMPTY 3
 String* growArr(String* strArr, int len, int inc){
 	String* cloneArr = (String*) malloc(sizeof(String*) * (len + inc));
 	for (int i = 0; i < len; i++){
@@ -67,11 +68,14 @@ int main(int argC, char**args){
 	int j = 0;
 	int k = 0;
 	int mode = FLAG_TRASH;
-	int open = 0;
+	int bracketDepth = 0;
+	//int open = 0;
+	String* writer = emptyStr(64);
 	for (int i = 0; i < len; i++){
 		appendStr(baseDir, &files[i]);
 		if (stat(baseDir->string, &status) == -1){
-			printf("file %s seems to be unavailable\n", baseDir->string);			baseDir->length -= files[i].length;
+			printf("file %s seems to be unavailable\n", baseDir->string);
+			baseDir->length -= files[i].length;
 			baseDir->string[baseDir->length] = '\0';
 			removeEntry(files, i, len);
 			len--;
@@ -85,10 +89,15 @@ int main(int argC, char**args){
 			} else {
 				char tempStorage[512];
 				while (fgets(tempStorage, 511, read)){
-					tempStorage[readData] = '\0';
 						j = 0;
+						writer->length = 0;
+						writer->string[0] = '\0';
 						while (tempStorage[j] != '\0'){
-							while (mode == FLAG_TRASH && tempStorage[j+k] == type[k]){
+							while((mode == FLAG_TRASH || mode == FLAG_EMPTY) && (tempStorage[j] == '	' || tempStorage[i] == ' ')){
+								j++;
+								mode = FLAG_EMPTY;		
+							}
+							while ((mode == FLAG_TRASH || mode == FLAG_EMPTY) && tempStorage[j+k] == type[k]){
 								k++;
 								if (type[k] == '\0'){
 									mode = FLAG_TYPEDEF;
@@ -97,7 +106,7 @@ int main(int argC, char**args){
 									break;
 								}
 							}
-							while ((mode == FLAG_TRASH || mode == FLAG_TYPEDEF) && tempStorage[j+k] == struc[k]){
+							while ((mode == FLAG_TRASH || mode == FLAG_TYPEDEF || mode == FLAG_EMPTY) && tempStorage[j+k] == struc[k]){
 								k++;
 								if (struc[k] == '\0'){
 									mode = FLAG_STRUCT;
@@ -107,14 +116,27 @@ int main(int argC, char**args){
 								}
 
 							}
-							if (mode == FLAG_TRASH){
-								//check for functions
+							if (tempStorage[j] == '{'){
+								bracketDepth++;
+								if (mode == FLAG_TRASH && bracketDepth == 1){
+									appendNoLen(writer, tempStorage, 510);
+									break;
+								}
+							} else if (tempStorage[j] == '}'){
+								bracketDepth--;
+								if (bracketDepth == 0){
+								mode = FLAG_TRASH;
+								}
 							}
 							j++;
 						}
-						if (open != 0){
-							// write to file, removing white space chars.
+						if (mode != FLAG_TRASH){
+							appendNoLen(writer, tempStorage, 510);
 						}
+						if (mode == FLAG_TRASH && bracketDepth == 0){
+							appendNoLen(writer, tempStorage, 510);
+						}
+						fwrite(writer->string, 1, writer->length, write);
 					}
 			}
 			baseDir->length -= files[i].length;
