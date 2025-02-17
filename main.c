@@ -12,6 +12,7 @@
 #define FLAG_TRASH -1
 #define FLAG_EMPTY 3
 #define FLAG_FUNC 4
+#define FLAG_DEF 5
 String* growArr(String* strArr, int len, int inc){
 	String* cloneArr = (String*) malloc(sizeof(String*) * (len + inc));
 	for (int i = 0; i < len; i++){
@@ -37,11 +38,12 @@ void removeEntry(String* arr, int index, int len){
 int main(int argC, char**args){
 	const char type[8] = "typedef";
 	const char struc[] = "struct";
+	const char def[] = "#define";
 	if (argC == 1){
 		printf("no files specified");
 		return 0;
 	}
-	char cwd[256];
+	char cwd[256]; 
 	getcwd(cwd, 256);
 	String* baseDir = buildStr(cwd,strlen(cwd));
 	String* files = (String*) malloc(sizeof(String*)*4);
@@ -99,6 +101,38 @@ int main(int argC, char**args){
 								j++;
 								mode = FLAG_EMPTY;		
 							}
+							if (mode == FLAG_DEF){
+								while (tempStorage[j] != '\0'){
+									j++;
+								}
+								if (tempStorage[j-1] != '\\'){
+									mode = FLAG_TRASH;	
+								} else {
+									mode = FLAG_DEF;
+									fwrite(tempStorage, 1, j, write);
+								}
+								break;
+							}
+							k=0;
+							while((mode == FLAG_TRASH || mode == FLAG_EMPTY) && tempStorage[j+k] == def[k]){
+								k++;
+								if (def[k] == '\0'){
+									j+= k;
+									while (tempStorage[j] != '\0'){
+										j++;
+									}
+									if (tempStorage[j-2] != '\\'){
+										mode = FLAG_TRASH;
+									} else {
+										mode = FLAG_DEF;
+										fwrite(tempStorage, 1, j, write);
+									}
+									break;
+								}
+								if (tempStorage[j+k] == '\0'){
+									break;
+								}
+							}
 							k=0;
 							while ((mode == FLAG_TRASH || mode == FLAG_EMPTY) && tempStorage[j+k] == type[k]){
 								k++;
@@ -140,7 +174,7 @@ int main(int argC, char**args){
 							j++;
 						}
 						printf("AAA\n");
-						if (mode != FLAG_TRASH && mode != FLAG_EMPTY && mode != FLAG_FUNC){
+						if (mode != FLAG_TRASH && mode != FLAG_EMPTY && mode != FLAG_FUNC && mode != FLAG_DEF){
 							printf("B\n");
 							appendNoLen(writer, tempStorage, 510);
 							printf("C\n");
