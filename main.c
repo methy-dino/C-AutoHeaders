@@ -39,6 +39,7 @@ int main(int argC, char**args){
 	const char type[8] = "typedef";
 	const char struc[] = "struct";
 	const char def[] = "#define";
+	const char inc[] = "#include";
 	if (argC == 1){
 		printf("no files specified");
 		return 0;
@@ -99,7 +100,8 @@ int main(int argC, char**args){
 						while (tempStorage[j] != '\0'){
 							while((mode == FLAG_TRASH || mode == FLAG_EMPTY) && (tempStorage[j] == '	' || tempStorage[i] == ' ')&& tempStorage[j] != '\0'){
 								j++;
-								mode = FLAG_EMPTY;		
+								mode = FLAG_EMPTY;
+								printf("in blank detection\n");		
 							}
 							if (mode == FLAG_DEF){
 								while (tempStorage[j] != '\0'){
@@ -114,7 +116,45 @@ int main(int argC, char**args){
 								break;
 							}
 							k=0;
-							while((mode == FLAG_TRASH || mode == FLAG_EMPTY) && tempStorage[j+k] == def[k]){
+							while ((mode == FLAG_TRASH || mode == FLAG_EMPTY) && tempStorage[j+k] == inc[k]){
+								k++;
+								printf("in include\n");
+								if (inc[k] == '\0'){
+									j += k;
+									mode = FLAG_TRASH;
+									printf("hm2\n");
+									while (tempStorage[j] == ' ' || tempStorage[j] == '	'){
+										j++;
+										printf("skipping whitespace\n");
+									}
+									printf("hm3\n");
+									if (tempStorage[j] != '<'){
+										j++;
+										String* newFile = emptyStr(16);
+										while (tempStorage[j] != '"'){
+											printf("adding char: %c \n", tempStorage[j]);
+											appendChar(newFile, tempStorage[j]);
+											j++;																				}
+										if (hasEntry(newFile->string, files, len) == 0){
+											printf("newF len = %d\n", newFile->length);
+		       									if (newFile->string[newFile->length-1] == 'h' && newFile->string[newFile->length-2] == '.'){
+												printf("testing\n");
+												files[len] = *newFile;
+												newFile->string[newFile->length-1] = 'c';
+												len++;
+												if (len == size){
+													files = growArr(files, len, 4);
+													size += 4;
+												}
+		       									}
+										}
+									break;
+									}
+								}
+								printf("hm\n");
+							}
+							k=0;
+							while ((mode == FLAG_TRASH || mode == FLAG_EMPTY) && tempStorage[j+k] == def[k]){
 								k++;
 								if (def[k] == '\0'){
 									j+= k;
