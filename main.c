@@ -56,7 +56,21 @@ int main(int argC, char**args){
 	String* files = (String*) malloc(sizeof(String*)*4);
 	int len = 0;
 	int size = 4;
-	for (int i = 1; i < argC; i++){
+	int start = 1;
+	int isSpef = 0;
+	int confirm = 0;
+	while (isSpef == 0){
+		//printf("test\n");
+		if (strcmp(args[start], "confirm-add") == 0){
+			confirm = 1;
+			//printf("WHY \n");
+			start++;
+		} else {
+			isSpef = 1;
+		}
+		//printf("test2\n");
+	}
+	for (int i = start; i < argC; i++){
 		int currL = strlen(args[i]);
 		if (hasEntry(args[i], files, len) == 0){
 		       if (args[i][currL-1] == 'c' && args[i][currL-2] == '.'){
@@ -82,6 +96,8 @@ int main(int argC, char**args){
 	int isMain = 0;
 	//int open = 0;
 	String* writer = emptyStr(64);
+	String* readStr;
+	String* writeStr;
 	for (int i = 0; i < len; i++){
 		appendStr(baseDir, &files[i]);
 		if (stat(baseDir->string, &status) == -1){
@@ -92,20 +108,27 @@ int main(int argC, char**args){
 			len--;
 			i--;
 		} else {
-			FILE* read = fopen(baseDir->string, "r+");
+			readStr = cloneStr(baseDir);
+			FILE* read = fopen(readStr->string, "r+");
 			baseDir->string[baseDir->length - 1] = 'h';
+			 writeStr = cloneStr(baseDir);
 			isMain = checkMain(baseDir);
-			FILE* write;
+			FILE* write = NULL;
 			if (isMain == 0){
-				write = fopen(baseDir->string, "w+");
+				write = fopen(writeStr->string, "w+");
+				if (write == NULL){
+					printf("wtf");
+				}
 			}
-			if (!read){
+			if (read == NULL){
 				printf("failed to read file \"%s\"", baseDir->string);
 			} else {
 				char tempStorage[512];
+				int row = 0;
 				while (fgets(tempStorage, 511, read)!= NULL){
 						//printf("test\n");
 						j = 0;
+						row++;
 						writer->length = 0;
 						writer->string[0] = '\0';
 						while (tempStorage[j] != '\0'){
@@ -114,7 +137,7 @@ int main(int argC, char**args){
 
 							 	k++;
 								mode = FLAG_EMPTY;
-								printf("in blank detection\n");		
+								//printf("in blank detection\n");		
 							}
 							j += k;
 							if (tempStorage[j] != ' ' && tempStorage[j] != '	' && tempStorage[j] != '\n' && tempStorage[j] != '\0' && mode == FLAG_EMPTY){
@@ -153,14 +176,34 @@ int main(int argC, char**args){
 											j++;																				}
 										if (hasEntry(newFile->string, files, len) == 0){
 		       									if (newFile->string[newFile->length-1] == 'h' && newFile->string[newFile->length-2] == '.'){
-												printf("found new file: %s \n", newFile->string);
-												files[len] = *newFile;
 												newFile->string[newFile->length-1] = 'c';
-												len++;
-												if (len == size){
-													files = growArr(files, len, 4);
-													size += 4;
+												if (confirm == 0){
+													printf("auto-adding %s \n", newFile->string);
+													files[len] = *newFile;
+													len++;
+												} else {
+													printf("found new file: %s \n", newFile->string);
+													printf("do you wish to add it to header generation? (y/n)  ");
+													char ans = '\0';
+													while (1 == 1){
+														scanf("%c",&ans);
+														if (ans == 'y' || ans == 'Y'){
+															files[len] = *newFile;
+															newFile->string[newFile->length-1] = 'c';
+															len++;
+															break;
+														}
+														if (ans == 'n' || ans == 'N'){
+															discardStr(newFile);
+															break;
+														}
+													}
 												}
+													if (len == size){
+														files = growArr(files, len, 4);
+														size += 4;
+													}
+
 		       									}
 										}
 									break;
@@ -233,7 +276,7 @@ int main(int argC, char**args){
 							}
 							j++;
 						}
-						printf("%d\n", mode);
+						//printf("%d\n", row);
 						if (mode != FLAG_TRASH && mode != FLAG_EMPTY && mode != FLAG_FUNC && mode != FLAG_DEF && isMain == 0){
 							//printf("B\n");
 							appendNoLen(writer, tempStorage, 510);
@@ -241,23 +284,34 @@ int main(int argC, char**args){
 							fwrite(writer->string, 1, writer->length, write);
 							//printf("RAAAAAAH\n");
 						}
-						
+						//printf("a\n");	
 						if (mode == FLAG_TRASH && bracketDepth == 0){
 							//printf("D\n");
 							appendNoLen(writer, tempStorage, 510);
 							//printf("E\n");
 							fwrite(writer->string, 1, writer->length, write);
 						}
+						//printf("b\n");
 						if ((mode == FLAG_FUNC) && bracketDepth == 0 && isMain == 0){
 							mode = FLAG_TRASH;
 						}	
 						//printf("huh\n");
 					}
 			}
-			if (isMain == 0){
+			//printf("booo\n");
+			if (isMain == 0 && write != NULL){
+				fclose(write);
+			}
+			//printf("testing\n");
+			if (read != NULL){
 				fclose(read);
 			}
-			fclose(write);
+			//printf("between\n");
+			free(readStr->string);
+			free(writeStr->string);
+			// mfw I can't free the String*
+			//discardStr(writeStr);
+			//printf("bah\n");
 			printf("done creating header for %s\n", baseDir->string);
 			baseDir->length -= files[i].length;
 			baseDir->string[baseDir->length] = '\0';
