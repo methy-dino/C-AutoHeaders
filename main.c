@@ -14,6 +14,9 @@
 #define FLAG_TDEF 5
 #define FLAG_EMPTY 0
 String* files;
+int len = 0;
+int size = 4;
+int confirm = 0;
 String* growArr(String* strArr, int len, int inc){
 	String* cloneArr = (String*) malloc(sizeof(String*) * (len + inc));
 	for (int i = 0; i < len; i++){
@@ -22,15 +25,23 @@ String* growArr(String* strArr, int len, int inc){
 	free(strArr);
 	return cloneArr;
 }
-int hasEntry(char* ptr, String* arr, int len){
+int hasEntry(char* ptr){
 	for (int i = 0; i < len; i++){
-		if (strEqualPtr(&arr[i], ptr) == 0){
+		if (strEqualPtr(&files[i], ptr) == 0){
 			return 1;
 		}
 	}
 	return 0;
 }
-void removeEntry(String* arr, int index, int len){
+void addEntry(String* entry){
+	files[len] = *entry;
+	len++;
+	if (len == size){
+		files = growArr(files, len, 4);
+		size += 4;
+	}
+}
+void removeEntry(String* arr, int index){
 	//free(&arr[index]);
 	for (int i = index; i < len; i++){
 		arr[i] = arr[i+1];
@@ -48,7 +59,7 @@ int checkMain(String* fPath){
 	const char inc[] = "#include";
 String* baseDir;
 void makeHeader(FILE* read, FILE* write){
-    int j = 0;
+  int j = 0;
 	int k = 0;
 	int mode = FLAG_EMPTY;
 	int bracketDepth = 0;
@@ -58,7 +69,7 @@ void makeHeader(FILE* read, FILE* write){
 		j = 0;
 		toAppend->length = 0;
 		toAppend->string[0] = '\0';
-        while(tempStorage[j] == ' ' && tempStorage[j] == '	'){
+    while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
 			j++;
 		}
 		if (mode != FLAG_FUNCTION && mode != FLAG_DEF && mode != FLAG_TDEF && bracketDepth == 0){
@@ -94,14 +105,33 @@ void makeHeader(FILE* read, FILE* write){
 			if (inc[k] == '\0'){
 				j += k;
 				mode = FLAG_INC;
-				// insert c file detect.
+				while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
+						j++;
+				}
+				String* newEntry = emptyStr(32);
+				printf("AAA \"%c\" \n", tempStorage[j]);
+				if (tempStorage[j] == '"'){
+					j++;
+					while (tempStorage[j] != '"'){
+						appendChar(newEntry, tempStorage[j]);
+						j++;
+					}
+					newEntry->string[newEntry->length - 1] = 'c';
+					if (confirm == 2){
+						// ask for confirmation
+					} else {
+							printf("found new file: \"%s\"\n", newEntry->string);
+							addEntry(newEntry);
+					}
+				}
 				while (tempStorage[j] != '\0'){
 					j++;
 				}
 			}
 		}
-		if (tempStorage[j+1] != '\n' && mode == FLAG_EMPTY && mode != FLAG_FUNCTION){
+		if (tempStorage[j+1] != '\n' && tempStorage[j+1] && mode == FLAG_EMPTY){
 			mode = FLAG_GLOB;
+			// basically as a failsafe in case other stuff doesn't detect
 		}
 		if (mode != FLAG_INC){
 			while (tempStorage[j] != '\0'){
@@ -134,7 +164,6 @@ void makeHeader(FILE* read, FILE* write){
 			}
 		}
 		if (mode == FLAG_TDEF){
-			printf("%d Bdepth\n", bracketDepth);
 			fwrite(tempStorage, 1, j, write);
 			if (bracketDepth == 0){
 				mode = FLAG_EMPTY;
@@ -159,11 +188,8 @@ int main(int argC, char**args){
 	getcwd(cwd, 256);
 	baseDir = buildStr(cwd,strlen(cwd));
 	files = (String*) malloc(sizeof(String*)*4);
-	int len = 0;
-	int size = 4;
 	int start = 1;
 	int isSpef = 0;
-	int confirm = 0;
 	while (isSpef == 0){
 		//printf("test\n");
 		if (strcmp(args[start], "confirm-add") == 0){
@@ -177,19 +203,14 @@ int main(int argC, char**args){
 	}
 	for (int i = start; i < argC; i++){
 		int currL = strlen(args[i]);
-		if (hasEntry(args[i], files, len) == 0){
+		if (hasEntry(args[i]) == 0){
 		       if (args[i][currL-1] == 'c' && args[i][currL-2] == '.'){
-			files[len] = *buildStr(args[i], currL);
-			len++;
+			addEntry(buildStr(args[i], currL));
 		       } else {
        			printf("file \"%s\" is not a C file\n", args[i]);			       
 		       }
 		} else {
 			printf("file \"%s\" specified twice\n",args[i]);
-		}
-		if (len == size){
-			files = growArr(files, len, 4);
-			size += 4;
 		}
 	}
 	struct stat status;
@@ -205,7 +226,7 @@ int main(int argC, char**args){
 			printf("file %s seems to be unavailable\n", baseDir->string);
 			baseDir->length -= files[i].length;
 			baseDir->string[baseDir->length] = '\0';
-			removeEntry(files, i, len);
+			removeEntry(files, i);
 			len--;
 			i--;
 		} else {
@@ -224,9 +245,7 @@ int main(int argC, char**args){
 			if (read == NULL){
 				printf("failed to read file \"%s\"", baseDir->string);
 			} else {
-				char tempStorage[512];
-				int row = 0;
-                makeHeader(read, write);
+         makeHeader(read, write);
 			if (write != NULL){
 				fclose(write);
 				write = NULL;
