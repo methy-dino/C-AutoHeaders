@@ -7,12 +7,13 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include "libs/string.h"
-#define FLAG_STRUCT 1
-#define FLAG_TYPEDEF 2
-#define FLAG_TRASH -1
-#define FLAG_EMPTY 3
-#define FLAG_FUNC 4
-#define FLAG_DEF 5
+#define FLAG_DEF 4
+#define FLAG_INC 3
+#define FLAG_FUNCTION 1
+#define FLAG_GLOB 2
+#define FLAG_TDEF 5
+#define FLAG_EMPTY 0
+String* files;
 String* growArr(String* strArr, int len, int inc){
 	String* cloneArr = (String*) malloc(sizeof(String*) * (len + inc));
 	for (int i = 0; i < len; i++){
@@ -41,19 +42,123 @@ int checkMain(String* fPath){
 	}
 	return 0;
 }
-int main(int argC, char**args){
 	const char type[8] = "typedef";
 	const char struc[] = "struct";
 	const char def[] = "#define";
 	const char inc[] = "#include";
+String* baseDir;
+void makeHeader(FILE* read, FILE* write){
+    int j = 0;
+	int k = 0;
+	int mode = FLAG_EMPTY;
+	int bracketDepth = 0;
+	String* toAppend = emptyStr(64);
+	char tempStorage[512];
+    while (fgets(tempStorage, 511, read)!= NULL){	
+		j = 0;
+		toAppend->length = 0;
+		toAppend->string[0] = '\0';
+        while(tempStorage[j] == ' ' && tempStorage[j] == '	'){
+			j++;
+		}
+		if (mode != FLAG_FUNCTION && mode != FLAG_DEF && mode != FLAG_TDEF && bracketDepth == 0){
+			mode = FLAG_EMPTY;
+		}
+		k = 0;
+		while (tempStorage[j+k] == type[k] && mode != FLAG_FUNCTION){
+			k++;
+			if (type[k] == '\0'){
+				j += k;
+				mode = FLAG_TDEF;
+			}
+		}
+		k = 0;
+		while (tempStorage[j+k] == struc[k] && mode != FLAG_FUNCTION){
+			k++;
+			if (struc[k] == '\0'){
+				j += k;
+				mode = FLAG_TDEF;
+			}
+		}
+		k = 0;
+		while (tempStorage[j+k] == def[k] && mode != FLAG_FUNCTION){
+			k++;
+			if (def[k] == '\0'){
+				j += k;
+				mode = FLAG_DEF;
+			}
+		}
+		k = 0;
+		while (tempStorage[j+k] == inc[k] && mode != FLAG_FUNCTION){
+			k++;
+			if (inc[k] == '\0'){
+				j += k;
+				mode = FLAG_INC;
+				// insert c file detect.
+				while (tempStorage[j] != '\0'){
+					j++;
+				}
+			}
+		}
+		if (tempStorage[j+1] != '\n' && mode == FLAG_EMPTY && mode != FLAG_FUNCTION){
+			mode = FLAG_GLOB;
+		}
+		if (mode != FLAG_INC){
+			while (tempStorage[j] != '\0'){
+				if (tempStorage[j] == '{'){
+					bracketDepth++;
+					printf("curr mode: %d \n", mode);
+					if (mode == FLAG_EMPTY){
+						appendNoLen(toAppend, tempStorage, 512);
+						// sub { by ;
+						toAppend->string[j] = ';';
+						toAppend->string[j+1] = '\0';
+						toAppend->length = j+1;
+						fwrite(toAppend->string, 1, toAppend->length, write);
+						mode = FLAG_FUNCTION;
+					}
+				} else if (tempStorage[j] == '}') {
+					bracketDepth--;
+					if (mode == FLAG_FUNCTION && bracketDepth == 0){
+						mode = FLAG_EMPTY;				
+					}
+				}
+				j++; 
+			}
+		}
+		if (mode == FLAG_DEF){
+			fwrite(tempStorage, 1, j, write);
+			if (bracketDepth == 0 && tempStorage[j-2] != '\\'){
+				printf("leaving define flag\n");
+				mode = FLAG_EMPTY;
+			}
+		}
+		if (mode == FLAG_TDEF){
+			printf("%d Bdepth\n", bracketDepth);
+			fwrite(tempStorage, 1, j, write);
+			if (bracketDepth == 0){
+				mode = FLAG_EMPTY;
+			}
+		}
+		if (mode == FLAG_INC){
+			fwrite(tempStorage, 1, j, write);
+		}
+		if (mode == FLAG_GLOB){
+			fwrite(tempStorage, 1, j, write);
+		}
+		toAppend->length = 0;
+		toAppend->string[0] = '\0';
+	}
+}
+int main(int argC, char**args){
 	if (argC == 1){
 		printf("no files specified");
 		return 0;
 	}
 	char cwd[256]; 
 	getcwd(cwd, 256);
-	String* baseDir = buildStr(cwd,strlen(cwd));
-	String* files = (String*) malloc(sizeof(String*)*4);
+	baseDir = buildStr(cwd,strlen(cwd));
+	files = (String*) malloc(sizeof(String*)*4);
 	int len = 0;
 	int size = 4;
 	int start = 1;
@@ -89,10 +194,6 @@ int main(int argC, char**args){
 	}
 	struct stat status;
 	appendPtr(baseDir, "/", 1);
-	int j = 0;
-	int k = 0;
-	int mode = FLAG_TRASH;
-	int bracketDepth = 0;
 	int isMain = 0;
 	//int open = 0;
 	String* writer = emptyStr(64);
@@ -110,10 +211,10 @@ int main(int argC, char**args){
 		} else {
 			readStr = cloneStr(baseDir);
 			FILE* read = fopen(readStr->string, "r+");
+			FILE* write;
 			baseDir->string[baseDir->length - 1] = 'h';
-			 writeStr = cloneStr(baseDir);
+			writeStr = cloneStr(baseDir);
 			isMain = checkMain(baseDir);
-			FILE* write = NULL;
 			if (isMain == 0){
 				write = fopen(writeStr->string, "w+");
 				if (write == NULL){
@@ -125,197 +226,22 @@ int main(int argC, char**args){
 			} else {
 				char tempStorage[512];
 				int row = 0;
-				while (fgets(tempStorage, 511, read)!= NULL){
-						//printf("test\n");
-						j = 0;
-						row++;
-						writer->length = 0;
-						writer->string[0] = '\0';
-						while (tempStorage[j] != '\0'){
-							k=0;
-							while((mode == FLAG_TRASH || mode == FLAG_EMPTY) && (tempStorage[j+k] == '	' || tempStorage[j+k] == ' ')&& tempStorage[j] != '\0'&& j == 0){
-
-							 	k++;
-								mode = FLAG_EMPTY;
-								//printf("in blank detection\n");		
-							}
-							j += k;
-							if (tempStorage[j] != ' ' && tempStorage[j] != '	' && tempStorage[j] != '\n' && tempStorage[j] != '\0' && mode == FLAG_EMPTY){
-								mode = FLAG_TRASH;		
-							}
-							if (mode == FLAG_DEF){
-								while (tempStorage[j] != '\0'){
-									j++;
-								}
-								if (tempStorage[j-1] != '\\'){
-									mode = FLAG_TRASH;	
-								} else {
-									mode = FLAG_DEF;
-									if (isMain == 0){
-									fwrite(tempStorage, 1, j, write);
-									}
-								}
-								break;
-							}
-							k=0;
-							while ((mode == FLAG_TRASH || mode == FLAG_EMPTY) && tempStorage[j+k] == inc[k]){
-								k++;
-								if (inc[k] == '\0'){
-									j += k;
-									mode = FLAG_TRASH;
-									//printf("hm2\n");
-									while (tempStorage[j] == ' ' || tempStorage[j] == '	'){
-										j++;
-									}
-									//printf("hm3\n");
-									if (tempStorage[j] != '<'){
-										j++;
-										String* newFile = emptyStr(16);
-										while (tempStorage[j] != '"'){
-											appendChar(newFile, tempStorage[j]);
-											j++;																				}
-										if (hasEntry(newFile->string, files, len) == 0){
-		       									if (newFile->string[newFile->length-1] == 'h' && newFile->string[newFile->length-2] == '.'){
-												newFile->string[newFile->length-1] = 'c';
-												if (confirm == 0){
-													printf("auto-adding %s \n", newFile->string);
-													files[len] = *newFile;
-													len++;
-												} else {
-													printf("found new file: %s \n", newFile->string);
-													printf("do you wish to add it to header generation? (y/n)  ");
-													char ans = '\0';
-													while (1 == 1){
-														scanf("%c",&ans);
-														if (ans == 'y' || ans == 'Y'){
-															files[len] = *newFile;
-															newFile->string[newFile->length-1] = 'c';
-															len++;
-															break;
-														}
-														if (ans == 'n' || ans == 'N'){
-															discardStr(newFile);
-															break;
-														}
-													}
-												}
-													if (len == size){
-														files = growArr(files, len, 4);
-														size += 4;
-													}
-
-		       									}
-										}
-									break;
-									}
-								}
-								//printf("hm\n");
-							}
-							k=0;
-							while ((mode == FLAG_TRASH || mode == FLAG_EMPTY) && tempStorage[j+k] == def[k]){
-								k++;
-								if (def[k] == '\0'){
-									j+= k;
-									while (tempStorage[j] != '\0'){
-										j++;
-									}
-									if (tempStorage[j-2] != '\\'){
-										mode = FLAG_TRASH;
-									} else {
-										mode = FLAG_DEF;
-										if (isMain == 0){
-											fwrite(tempStorage, 1, j, write);
-										}
-									}
-									break;
-								}
-								if (tempStorage[j+k] == '\0'){
-									break;
-								}
-							}
-							k=0;
-							while ((mode == FLAG_TRASH || mode == FLAG_EMPTY) && tempStorage[j+k] == type[k]){
-								k++;
-								if (type[k] == '\0'){
-									mode = FLAG_TYPEDEF;
-								}
-								if (tempStorage[j+k] == '\0'){
-									break;
-								}
-							}
-							k=0;
-							while ((mode == FLAG_TRASH || mode == FLAG_TYPEDEF || mode == FLAG_EMPTY) && tempStorage[j+k] == struc[k]){
-								k++;
-								if (struc[k] == '\0'){
-									mode = FLAG_STRUCT;
-								}
-								if (tempStorage[j+k] == '\0'){
-									break;
-								}
-
-							}
-							if (tempStorage[j] == '{'){
-								bracketDepth++;
-								if (mode == FLAG_TRASH && bracketDepth == 1){
-									appendNoLen(writer, tempStorage, 510);
-									mode = FLAG_FUNC;
-									writer->length -= 1;
-									writer->string[writer->length-1] = '\n';
-									writer->string[writer->length] = '\0';
-									if (isMain == 0){
-										fwrite(writer->string,1,writer->length,write);
-									}
-									break;
-								}
-							} else if (tempStorage[j] == '}'){
-								bracketDepth--;
-								if (bracketDepth == 0 && mode != FLAG_FUNC){
-									mode = FLAG_TRASH;
-									break;
-								}
-							}
-							j++;
-						}
-						//printf("%d\n", row);
-						if (mode != FLAG_TRASH && mode != FLAG_EMPTY && mode != FLAG_FUNC && mode != FLAG_DEF && isMain == 0){
-							//printf("B\n");
-							appendNoLen(writer, tempStorage, 510);
-							//printf("C\n");
-							fwrite(writer->string, 1, writer->length, write);
-							//printf("RAAAAAAH\n");
-						}
-						//printf("a\n");	
-						if (mode == FLAG_TRASH && bracketDepth == 0){
-							//printf("D\n");
-							appendNoLen(writer, tempStorage, 510);
-							//printf("E\n");
-							fwrite(writer->string, 1, writer->length, write);
-						}
-						//printf("b\n");
-						if ((mode == FLAG_FUNC) && bracketDepth == 0 && isMain == 0){
-							mode = FLAG_TRASH;
-						}	
-						//printf("huh\n");
-					}
-			}
-			//printf("booo\n");
-			if (isMain == 0 && write != NULL){
+                makeHeader(read, write);
+			if (write != NULL){
 				fclose(write);
+				write = NULL;
 			}
-			//printf("testing\n");
 			if (read != NULL){
 				fclose(read);
+				read = NULL;
 			}
-			//printf("between\n");
-			free(readStr->string);
-			free(writeStr->string);
-			// mfw I can't free the String*
-			//discardStr(writeStr);
-			//printf("bah\n");
+			discardStr(readStr);
+			discardStr(writeStr);
 			printf("done creating header for %s\n", baseDir->string);
 			baseDir->length -= files[i].length;
 			baseDir->string[baseDir->length] = '\0';
 		}
+		}
 	}
 	return 0;
-}
+}	
