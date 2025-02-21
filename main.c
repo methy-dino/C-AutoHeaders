@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <poll.h>
 #include "libs/string.h"
 #define FLAG_DEF 4
 #define FLAG_INC 3
@@ -17,6 +18,7 @@ String* files;
 int len = 0;
 int size = 4;
 int confirm = 0;
+int noAdd = -1;
 String* growArr(String* strArr, int len, int inc){
 	String* cloneArr = (String*) malloc(sizeof(String*) * (len + inc));
 	for (int i = 0; i < len; i++){
@@ -61,8 +63,37 @@ int checkMain(String* fPath){
 	const char def[] = "#define";
 	const char inc[] = "#include";
 String* baseDir;
+void importEntry(String* newEntry){
+	if (hasEntry(newEntry->string) || (noAdd == 1 && confirm == 0)){
+		return;
+	}
+	if (confirm == 1){
+		printf("found new file: \"%s\", do you wish to include it in the header generation? (y\\n)", newEntry->string);
+		struct pollfd mypoll = { STDIN_FILENO, POLLIN|POLLPRI };
+		char answer = '\0';
+		if (poll(&mypoll, 1, 10000)){
+			scanf("%c", &answer);
+			if (answer == 'N' || answer == 'n'){
+				discardStr(newEntry);
+				return;
+			} else if (answer == 'Y' || answer == 'y'){
+				addEntry(newEntry);
+				return;
+			}
+		} else {
+			if (noAdd == -1){
+				addEntry(newEntry);
+			} else {
+				discardStr(newEntry);
+			}
+		}
+	} else {
+		printf("found new file: \"%s\"\n", newEntry->string);
+		addEntry(newEntry);
+	}
+}
 void makeHeader(FILE* read, FILE* write){
-  	int j = 0;
+	int j = 0;
 	int k = 0;
 	int mode = FLAG_EMPTY;
 	int bracketDepth = 0;
@@ -72,7 +103,7 @@ void makeHeader(FILE* read, FILE* write){
 		j = 0;
 		toAppend->length = 0;
 		toAppend->string[0] = '\0';
-    while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
+    	while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
 			j++;
 		}
 		if (mode != FLAG_FUNCTION && mode != FLAG_DEF && mode != FLAG_TDEF && bracketDepth == 0){
@@ -120,26 +151,10 @@ void makeHeader(FILE* read, FILE* write){
 						j++;
 					}
 					newEntry->string[newEntry->length - 1] = 'c';
-					if (confirm == 1){
-						printf("found new file: \"%s\", do you wish to include it in the header generation? (y\\n)", newEntry->string);
-						while (1 == 1){
-										char answer = '\0';
-											scanf("%c", &answer);
-											if (answer == 'N' || answer == 'n'){
-												discardStr(newEntry);
-												break;
-											} else if (answer == 'Y' || answer == 'y'){
-												addEntry(newEntry);
-												break;
-											}
-										}
-					} else {
-							printf("found new file: \"%s\"\n", newEntry->string);
-							addEntry(newEntry);
-					}
-				}
+					importEntry(newEntry);
 				while (tempStorage[j] != '\0'){
 					j++;
+					}
 				}
 			}
 		}
@@ -217,23 +232,7 @@ void checkImports(FILE* read){
 						j++;
 					}
 					newEntry->string[newEntry->length - 1] = 'c';
-					if (confirm == 1){
-						char answer = '\0';
-						printf("found new file: \"%s\", do you wish to include it in the header generation? (y\\n)", newEntry->string);
-						while (1 == 1){
-							scanf("%c", &answer);
-							if (answer == 'N' || answer == 'n'){
-								discardStr(newEntry);
-								break;
-							} else if (answer == 'Y' || answer == 'y'){
-								addEntry(newEntry);
-								break;
-							}
-						}
-					} else {
-						printf("found new file: \"%s\"\n", newEntry->string);
-						addEntry(newEntry);
-					}
+					importEntry(newEntry);
 				}
 			}
 		}
@@ -253,6 +252,12 @@ int main(int argC, char**args){
 	while (isSpef == 0){
 		if (strcmp(args[start], "confirm") == 0){
 			confirm = 1;
+			start++;
+		} else if(strcmp(args[start], "no-add") == 0){
+			noAdd = 1;
+			start++;
+		} else if (strcmp(args[start], "auto-add") == 0){
+			noAdd = -1;
 			start++;
 		} else {
 			isSpef = 1;
