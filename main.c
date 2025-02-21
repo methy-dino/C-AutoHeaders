@@ -48,7 +48,10 @@ void removeEntry(String* arr, int index){
 	}
 }
 int checkMain(String* fPath){
-	if (fPath->string[fPath->length-1] == 'c' && fPath->string[fPath->length-2] == '.' && fPath->string[fPath->length-1] == 'n' && fPath->string[fPath->length-1] == 'i' && fPath->string[fPath->length-1] == 'a' && fPath->string[fPath->length-1] == 'm' && fPath->string[fPath->length-1] == '/'){
+	if (fPath->length < 7){
+		return 0;
+	}
+	if (fPath->string[fPath->length-1] == 'c' && fPath->string[fPath->length-2] == '.' && fPath->string[fPath->length-3] == 'n' && fPath->string[fPath->length-4] == 'i' && fPath->string[fPath->length-5] == 'a' && fPath->string[fPath->length-6] == 'm' && fPath->string[fPath->length-7] == '/'){
 		return 1;
 	}
 	return 0;
@@ -59,7 +62,7 @@ int checkMain(String* fPath){
 	const char inc[] = "#include";
 String* baseDir;
 void makeHeader(FILE* read, FILE* write){
-  int j = 0;
+  	int j = 0;
 	int k = 0;
 	int mode = FLAG_EMPTY;
 	int bracketDepth = 0;
@@ -109,7 +112,7 @@ void makeHeader(FILE* read, FILE* write){
 						j++;
 				}
 				String* newEntry = emptyStr(32);
-				printf("AAA \"%c\" \n", tempStorage[j]);
+				//printf("AAA \"%c\" \n", tempStorage[j]);
 				if (tempStorage[j] == '"'){
 					j++;
 					while (tempStorage[j] != '"'){
@@ -117,8 +120,19 @@ void makeHeader(FILE* read, FILE* write){
 						j++;
 					}
 					newEntry->string[newEntry->length - 1] = 'c';
-					if (confirm == 2){
-						// ask for confirmation
+					if (confirm == 1){
+						printf("found new file: \"%s\", do you wish to include it in the header generation? (y\\n)", newEntry->string);
+						while (1 == 1){
+										char answer = '\0';
+											scanf("%c", &answer);
+											if (answer == 'N' || answer == 'n'){
+												discardStr(newEntry);
+												break;
+											} else if (answer == 'Y' || answer == 'y'){
+												addEntry(newEntry);
+												break;
+											}
+										}
 					} else {
 							printf("found new file: \"%s\"\n", newEntry->string);
 							addEntry(newEntry);
@@ -137,7 +151,7 @@ void makeHeader(FILE* read, FILE* write){
 			while (tempStorage[j] != '\0'){
 				if (tempStorage[j] == '{'){
 					bracketDepth++;
-					printf("curr mode: %d \n", mode);
+					//printf("curr mode: %d \n", mode);
 					if (mode == FLAG_EMPTY){
 						appendNoLen(toAppend, tempStorage, 512);
 						// sub { by ;
@@ -159,11 +173,10 @@ void makeHeader(FILE* read, FILE* write){
 		if (mode == FLAG_DEF){
 			fwrite(tempStorage, 1, j, write);
 			if (bracketDepth == 0 && tempStorage[j-2] != '\\'){
-				printf("leaving define flag\n");
 				mode = FLAG_EMPTY;
+				if (mode == FLAG_TDEF){
 			}
 		}
-		if (mode == FLAG_TDEF){
 			fwrite(tempStorage, 1, j, write);
 			if (bracketDepth == 0){
 				mode = FLAG_EMPTY;
@@ -179,6 +192,53 @@ void makeHeader(FILE* read, FILE* write){
 		toAppend->string[0] = '\0';
 	}
 }
+void checkImports(FILE* read){
+	char tempStorage[512];
+	int j = 0;
+	int k = 0;
+	while (fgets(tempStorage, 511, read)!= NULL){
+		j = 0;
+		while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
+			j++;
+		}
+		k=0;
+		while (tempStorage[j+k] == inc[k]){
+			k++;
+			if (inc[k] == '\0'){
+				j += k;
+				while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
+					j++;
+				}
+				String* newEntry = emptyStr(32);
+				if (tempStorage[j] == '"'){
+					j++;
+					while (tempStorage[j] != '"'){
+						appendChar(newEntry, tempStorage[j]);
+						j++;
+					}
+					newEntry->string[newEntry->length - 1] = 'c';
+					if (confirm == 1){
+						char answer = '\0';
+						printf("found new file: \"%s\", do you wish to include it in the header generation? (y\\n)", newEntry->string);
+						while (1 == 1){
+							scanf("%c", &answer);
+							if (answer == 'N' || answer == 'n'){
+								discardStr(newEntry);
+								break;
+							} else if (answer == 'Y' || answer == 'y'){
+								addEntry(newEntry);
+								break;
+							}
+						}
+					} else {
+						printf("found new file: \"%s\"\n", newEntry->string);
+						addEntry(newEntry);
+					}
+				}
+			}
+		}
+	}
+}
 int main(int argC, char**args){
 	if (argC == 1){
 		printf("no files specified");
@@ -191,15 +251,12 @@ int main(int argC, char**args){
 	int start = 1;
 	int isSpef = 0;
 	while (isSpef == 0){
-		//printf("test\n");
-		if (strcmp(args[start], "confirm-add") == 0){
+		if (strcmp(args[start], "confirm") == 0){
 			confirm = 1;
-			//printf("WHY \n");
 			start++;
 		} else {
 			isSpef = 1;
 		}
-		//printf("test2\n");
 	}
 	for (int i = start; i < argC; i++){
 		int currL = strlen(args[i]);
@@ -217,7 +274,6 @@ int main(int argC, char**args){
 	appendPtr(baseDir, "/", 1);
 	int isMain = 0;
 	//int open = 0;
-	String* writer = emptyStr(64);
 	String* readStr;
 	String* writeStr;
 	for (int i = 0; i < len; i++){
@@ -233,19 +289,25 @@ int main(int argC, char**args){
 			readStr = cloneStr(baseDir);
 			FILE* read = fopen(readStr->string, "r+");
 			FILE* write;
+			isMain = checkMain(baseDir);
 			baseDir->string[baseDir->length - 1] = 'h';
 			writeStr = cloneStr(baseDir);
-			isMain = checkMain(baseDir);
 			if (isMain == 0){
 				write = fopen(writeStr->string, "w+");
-				if (write == NULL){
-					printf("wtf");
-				}
+			} else {
+				printf("checking imports from main file\n");
+				checkImports(read);
+				baseDir->length -= files[i].length;
+				baseDir->string[baseDir->length] = '\0';
+				continue;
 			}
 			if (read == NULL){
 				printf("failed to read file \"%s\"", baseDir->string);
 			} else {
-         makeHeader(read, write);
+					printf("started creating header for %s\n", baseDir->string);
+       	  makeHeader(read, write);
+					printf("done creating header for %s\n", baseDir->string);
+			}
 			if (write != NULL){
 				fclose(write);
 				write = NULL;
@@ -256,10 +318,8 @@ int main(int argC, char**args){
 			}
 			discardStr(readStr);
 			discardStr(writeStr);
-			printf("done creating header for %s\n", baseDir->string);
 			baseDir->length -= files[i].length;
 			baseDir->string[baseDir->length] = '\0';
-		}
 		}
 	}
 	return 0;
