@@ -1,4 +1,4 @@
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <stdio.h> 
 #include <unistd.h>
 #include <string.h>
@@ -68,28 +68,39 @@ void importEntry(String* newEntry){
 		return;
 	}
 	if (confirm == 1){
-		printf("found new file: \"%s\", do you wish to include it in the header generation? (y\\n)", newEntry->string);
+		printf("found new file: \"%s\", do you wish to include it in the header generation? (y/n) ", newEntry->string);
+		fflush(stdout);
 		struct pollfd mypoll = { STDIN_FILENO, POLLIN|POLLPRI };
 		char answer = '\0';
-		if (poll(&mypoll, 1, 10000)){
-			scanf("%c", &answer);
-			if (answer == 'N' || answer == 'n'){
-				discardStr(newEntry);
-				return;
-			} else if (answer == 'Y' || answer == 'y'){
-				addEntry(newEntry);
-				return;
-			}
-		} else {
-			if (noAdd == -1){
-				addEntry(newEntry);
+		while (1){
+			if (poll(&mypoll, 1, 10000)){
+				scanf("%c", &answer);
+				if (answer == 'N' || answer == 'n'){
+					discardStr(newEntry);
+					return;
+				} else if (answer == 'Y' || answer == 'y'){
+					addEntry(newEntry);
+					return;
+				}
 			} else {
-				discardStr(newEntry);
+				if (noAdd == -1){
+					printf("\nautomatically added file \n");
+					addEntry(newEntry);
+					return;
+				} else {
+					printf("\nautomatically rejected file \n");
+					discardStr(newEntry);
+					return;
+				}
 			}
 		}
 	} else {
-		printf("found new file: \"%s\"\n", newEntry->string);
-		addEntry(newEntry);
+		if (noAdd == -1){
+			printf("found new file: \"%s\"\n", newEntry->string);
+			addEntry(newEntry);
+		} else {
+			discardStr(newEntry);
+		}
 	}
 }
 void makeHeader(FILE* read, FILE* write){
@@ -239,17 +250,13 @@ void checkImports(FILE* read){
 	}
 }
 int main(int argC, char**args){
-	if (argC == 1){
-		printf("no files specified");
-		return 0;
-	}
 	char cwd[256]; 
 	getcwd(cwd, 256);
 	baseDir = buildStr(cwd,strlen(cwd));
 	files = (String*) malloc(sizeof(String*)*4);
 	int start = 1;
 	int isSpef = 0;
-	while (isSpef == 0){
+	while (isSpef == 0 && argC > start){
 		if (strcmp(args[start], "confirm") == 0){
 			confirm = 1;
 			start++;
@@ -262,6 +269,10 @@ int main(int argC, char**args){
 		} else {
 			isSpef = 1;
 		}
+	}
+	if (argC == start){
+		printf("there seems to be no files in your input\n");
+		return 0;
 	}
 	for (int i = start; i < argC; i++){
 		int currL = strlen(args[i]);
