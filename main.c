@@ -117,7 +117,7 @@ void makeHeader(FILE* read, FILE* write){
     	while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
 			j++;
 		}
-		if (mode != FLAG_FUNCTION && mode != FLAG_DEF && mode != FLAG_TDEF && bracketDepth == 0){
+		if (bracketDepth == 0){
 			mode = FLAG_EMPTY;
 		}
 		k = 0;
@@ -169,7 +169,7 @@ void makeHeader(FILE* read, FILE* write){
 				}
 			}
 		}
-		if (tempStorage[j+1] != '\n' && tempStorage[j+1] && mode == FLAG_EMPTY){
+		if (tempStorage[j+1] != '\n' && tempStorage[j+1] && mode == FLAG_EMPTY && bracketDepth == 0){
 			mode = FLAG_GLOB;
 			// basically as a failsafe in case other stuff doesn't detect
 		}
@@ -177,8 +177,7 @@ void makeHeader(FILE* read, FILE* write){
 			while (tempStorage[j] != '\0'){
 				if (tempStorage[j] == '{'){
 					bracketDepth++;
-					//printf("curr mode: %d \n", mode);
-					if (mode == FLAG_EMPTY){
+					if ((mode == FLAG_GLOB || mode == FLAG_EMPTY) && bracketDepth == 1){
 						appendNoLen(toAppend, tempStorage, 512);
 						// sub { by ;
 						toAppend->string[j] = ';';
@@ -196,22 +195,20 @@ void makeHeader(FILE* read, FILE* write){
 				j++; 
 			}
 		}
+		printf("curr mode: %d \n", mode);
 		if (mode == FLAG_DEF){
 			fwrite(tempStorage, 1, j, write);
 			if (bracketDepth == 0 && tempStorage[j-2] != '\\'){
 				mode = FLAG_EMPTY;
-				if (mode == FLAG_TDEF){
 			}
-		}
+		}else if (mode == FLAG_TDEF){
 			fwrite(tempStorage, 1, j, write);
 			if (bracketDepth == 0){
 				mode = FLAG_EMPTY;
 			}
-		}
-		if (mode == FLAG_INC){
+		} else if (mode == FLAG_INC){
 			fwrite(tempStorage, 1, j, write);
-		}
-		if (mode == FLAG_GLOB){
+		} else if (mode == FLAG_GLOB){
 			fwrite(tempStorage, 1, j, write);
 		}
 		toAppend->length = 0;
