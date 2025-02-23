@@ -50,7 +50,7 @@ void removeEntry(String* arr, int index){
 	}
 }
 int checkMain(String* fPath){
-	if (fPath->length < 7){
+if (fPath->length < 7){
 		return 0;
 	}
 	if (fPath->string[fPath->length-1] == 'c' && fPath->string[fPath->length-2] == '.' && fPath->string[fPath->length-3] == 'n' && fPath->string[fPath->length-4] == 'i' && fPath->string[fPath->length-5] == 'a' && fPath->string[fPath->length-6] == 'm' && fPath->string[fPath->length-7] == '/'){
@@ -100,6 +100,7 @@ void importEntry(String* newEntry){
 			addEntry(newEntry);
 		} else {
 			discardStr(newEntry);
+			return;
 		}
 	}
 }
@@ -162,10 +163,10 @@ void makeHeader(FILE* read, FILE* write){
 						j++;
 					}
 					newEntry->string[newEntry->length - 1] = 'c';
-					importEntry(newEntry);
+					importEntry(newEntry);	
+				}
 				while (tempStorage[j] != '\0'){
 					j++;
-					}
 				}
 			}
 		}
@@ -183,6 +184,7 @@ void makeHeader(FILE* read, FILE* write){
 						toAppend->string[j] = ';';
 						toAppend->string[j+1] = '\0';
 						toAppend->length = j+1;
+						appendPtr(toAppend, "\n", 1);
 						fwrite(toAppend->string, 1, toAppend->length, write);
 						mode = FLAG_FUNCTION;
 					}
@@ -195,13 +197,14 @@ void makeHeader(FILE* read, FILE* write){
 				j++; 
 			}
 		}
-		printf("curr mode: %d \n", mode);
+		//printf("curr mode: %d \n", mode);
 		if (mode == FLAG_DEF){
 			fwrite(tempStorage, 1, j, write);
 			if (bracketDepth == 0 && tempStorage[j-2] != '\\'){
 				mode = FLAG_EMPTY;
 			}
 		}else if (mode == FLAG_TDEF){
+			//printf("%s", tempStorage);
 			fwrite(tempStorage, 1, j, write);
 			if (bracketDepth == 0){
 				mode = FLAG_EMPTY;
@@ -323,11 +326,11 @@ int main(int argC, char**args){
 			}
 			if (write != NULL){
 				fclose(write);
-				write = NULL;
+				//write = NULL;
 			}
 			if (read != NULL){
 				fclose(read);
-				read = NULL;
+				//read = NULL;
 			}
 			discardStr(readStr);
 			discardStr(writeStr);
