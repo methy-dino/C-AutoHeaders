@@ -24,6 +24,7 @@ String* growArr(String* strArr, int len, int inc){
 	for (int i = 0; i < len; i++){
 		cloneArr[i] = strArr[i];
 	}
+	printf("free at line 28\n");
 	free(strArr);
 	return cloneArr;
 }
@@ -44,7 +45,8 @@ void addEntry(String* entry){
 	}
 }
 void removeEntry(String* arr, int index){
-	//free(&arr[index]);
+	printf("free at line 49\n");
+	free(&arr[index]);
 	for (int i = index; i < len; i++){
 		arr[i] = arr[i+1];
 	}
@@ -181,6 +183,7 @@ void makeHeader(FILE* read, FILE* write){
 					if ((mode == FLAG_GLOB || mode == FLAG_EMPTY) && bracketDepth == 1){
 						appendNoLen(toAppend, tempStorage, 512);
 						// sub { by ;
+						printf("%d %d\n", j, toAppend->length);
 						toAppend->string[j] = ';';
 						toAppend->string[j+1] = '\0';
 						toAppend->length = j+1;
@@ -325,15 +328,19 @@ int main(int argC, char**args){
 					printf("done creating header for %s\n", baseDir->string);
 			}
 			if (write != NULL){
-				fclose(write);
+				printf("free at line 332\n");
+				//fclose(write);
 				//write = NULL;
 			}
 			if (read != NULL){
-				fclose(read);
+				printf("free at line 337\n");
+				//fclose(read);
 				//read = NULL;
 			}
-			discardStr(readStr);
-			discardStr(writeStr);
+			//printf("free at line 341\n");
+			//discardStr(readStr);
+			//printf("free at line 343\n");
+			//discardStr(writeStr);
 			baseDir->length -= files[i].length;
 			baseDir->string[baseDir->length] = '\0';
 		}
