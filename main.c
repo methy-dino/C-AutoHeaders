@@ -14,45 +14,47 @@
 #define FLAG_GLOB 2
 #define FLAG_TDEF 5
 #define FLAG_EMPTY 0
-String* files;
-int len = 0;
-int size = 4;
+// dum dum
+String** files;
+int f_len = 0;
+int f_size = 4;
 int confirm = 0;
-int noAdd = -1;
-String* growArr(String* strArr, int len, int inc){
-	String* cloneArr = (String*) malloc(sizeof(String*) * (len + inc));
-	for (int i = 0; i < len; i++){
-		cloneArr[i] = strArr[i];
+int no_add = -1;
+void grow_arr(int inc){
+	String** n_arr = malloc(sizeof(String*) * (f_size + inc));
+	for (int i = 0; i < f_size; i++){
+		n_arr[i] = files[i];
 	}
-	printf("free at line 28\n");
-	free(strArr);
-	return cloneArr;
+	f_size += inc;
+	free(files);
+	files = n_arr;
 }
-int hasEntry(char* ptr){
-	for (int i = 0; i < len; i++){
-		if (strEqualPtr(&files[i], ptr) == 0){
+void add_entry(String* file){
+	if (f_size == f_len){
+		grow_arr(8);
+	};
+	files[f_len] = file;
+	f_len++;
+}
+void remove_entry(int index){
+	discardStr(files[index]);
+	while(index < f_size-1){
+		files[index] = files[index+1];
+		index++;
+	}
+	f_len--;
+}
+int has_entry(String* entry){
+	for (int i = 0; i < f_len; i++){
+	//	printf("%d == %s \n", i, files[i]->string);
+		if (strEqual(files[i], entry) == 1){
 			return 1;
 		}
 	}
 	return 0;
 }
-void addEntry(String* entry){
-	files[len] = *entry;
-	len++;
-	if (len == size){
-		files = growArr(files, len, 4);
-		size += 4;
-	}
-}
-void removeEntry(String* arr, int index){
-	printf("free at line 49\n");
-	free(&arr[index]);
-	for (int i = index; i < len; i++){
-		arr[i] = arr[i+1];
-	}
-}
 int checkMain(String* fPath){
-if (fPath->length < 7){
+	if (fPath->length < 7){
 		return 0;
 	}
 	if (fPath->string[fPath->length-1] == 'c' && fPath->string[fPath->length-2] == '.' && fPath->string[fPath->length-3] == 'n' && fPath->string[fPath->length-4] == 'i' && fPath->string[fPath->length-5] == 'a' && fPath->string[fPath->length-6] == 'm' && fPath->string[fPath->length-7] == '/'){
@@ -65,8 +67,9 @@ if (fPath->length < 7){
 	const char def[] = "#define";
 	const char inc[] = "#include";
 String* baseDir;
-void importEntry(String* newEntry){
-	if (hasEntry(newEntry->string) || (noAdd == 1 && confirm == 0)){
+void import_entry(String* newEntry){
+	//printf("importing entry: %s \n", newEntry->string);
+	if (has_entry(newEntry) || (no_add == 1 && confirm == 0)){
 		return;
 	}
 	if (confirm == 1){
@@ -74,32 +77,30 @@ void importEntry(String* newEntry){
 		fflush(stdout);
 		struct pollfd mypoll = { STDIN_FILENO, POLLIN|POLLPRI };
 		char answer = '\0';
-		while (1){
-			if (poll(&mypoll, 1, 10000)){
-				scanf("%c", &answer);
-				if (answer == 'N' || answer == 'n'){
-					discardStr(newEntry);
-					return;
-				} else if (answer == 'Y' || answer == 'y'){
-					addEntry(newEntry);
-					return;
-				}
+		if (poll(&mypoll, 1, 10000)){
+			scanf("%c", &answer);
+			if (answer == 'N' || answer == 'n'){
+				discardStr(newEntry);
+				return;
+			} else if (answer == 'Y' || answer == 'y'){
+				add_entry(newEntry);
+				return;
+			}
+		} else {
+			if (no_add == -1){
+				printf("\nautomatically added file \n");
+				add_entry(newEntry);
+				return;
 			} else {
-				if (noAdd == -1){
-					printf("\nautomatically added file \n");
-					addEntry(newEntry);
-					return;
-				} else {
-					printf("\nautomatically rejected file \n");
-					discardStr(newEntry);
-					return;
-				}
+				printf("\nautomatically rejected file \n");
+				discardStr(newEntry);
+				return;
 			}
 		}
 	} else {
-		if (noAdd == -1){
+		if (no_add == -1){
 			printf("found new file: \"%s\"\n", newEntry->string);
-			addEntry(newEntry);
+			add_entry(newEntry);
 		} else {
 			discardStr(newEntry);
 			return;
@@ -111,7 +112,7 @@ void makeHeader(FILE* read, FILE* write){
 	int k = 0;
 	int mode = FLAG_EMPTY;
 	int bracketDepth = 0;
-	String* toAppend = emptyStr(64);
+	String* toAppend = emptyStr(32);
 	char tempStorage[512];
     while (fgets(tempStorage, 511, read)!= NULL){	
 		j = 0;
@@ -165,7 +166,7 @@ void makeHeader(FILE* read, FILE* write){
 						j++;
 					}
 					newEntry->string[newEntry->length - 1] = 'c';
-					importEntry(newEntry);	
+					import_entry(newEntry);	
 				}
 				while (tempStorage[j] != '\0'){
 					j++;
@@ -183,7 +184,7 @@ void makeHeader(FILE* read, FILE* write){
 					if ((mode == FLAG_GLOB || mode == FLAG_EMPTY) && bracketDepth == 1){
 						appendNoLen(toAppend, tempStorage, 512);
 						// sub { by ;
-						printf("%d %d\n", j, toAppend->length);
+						//printf("%d %d\n", j, toAppend->length);
 						toAppend->string[j] = ';';
 						toAppend->string[j+1] = '\0';
 						toAppend->length = j+1;
@@ -220,6 +221,7 @@ void makeHeader(FILE* read, FILE* write){
 		toAppend->length = 0;
 		toAppend->string[0] = '\0';
 	}
+	discardStr(toAppend);
 }
 void checkImports(FILE* read){
 	char tempStorage[512];
@@ -238,15 +240,20 @@ void checkImports(FILE* read){
 				while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
 					j++;
 				}
-				String* newEntry = emptyStr(32);
+				String* new_entry = emptyStr(32);
+				printf("%s", new_entry->string);
 				if (tempStorage[j] == '"'){
 					j++;
 					while (tempStorage[j] != '"'){
-						appendChar(newEntry, tempStorage[j]);
+						appendChar(new_entry, tempStorage[j]);
 						j++;
 					}
-					newEntry->string[newEntry->length - 1] = 'c';
-					importEntry(newEntry);
+
+					new_entry->string[new_entry->length - 1] = 'c';
+					printf("%s\n", new_entry->string);
+					import_entry(new_entry);
+				} else {
+					discardStr(new_entry);
 				}
 			}
 		}
@@ -256,21 +263,21 @@ int main(int argC, char**args){
 	char cwd[256]; 
 	getcwd(cwd, 256);
 	baseDir = buildStr(cwd,strlen(cwd));
-	files = (String*) malloc(sizeof(String*)*4);
+	files = (String**) malloc(sizeof(String*)*4);
 	int start = 1;
-	int isSpef = 0;
-	while (isSpef == 0 && argC > start){
+	int is_spef = 0;
+	while (is_spef == 0 && argC > start){
 		if (strcmp(args[start], "confirm") == 0){
 			confirm = 1;
 			start++;
-		} else if(strcmp(args[start], "no-add") == 0){
-			noAdd = 1;
+		} else if (strcmp(args[start], "no-add") == 0){
+			no_add = 1;
 			start++;
 		} else if (strcmp(args[start], "auto-add") == 0){
-			noAdd = -1;
+			no_add = -1;
 			start++;
 		} else {
-			isSpef = 1;
+			is_spef = 1;
 		}
 	}
 	if (argC == start){
@@ -279,14 +286,17 @@ int main(int argC, char**args){
 	}
 	for (int i = start; i < argC; i++){
 		int currL = strlen(args[i]);
-		if (hasEntry(args[i]) == 0){
-		       if (args[i][currL-1] == 'c' && args[i][currL-2] == '.'){
-			addEntry(buildStr(args[i], currL));
-		       } else {
-       			printf("file \"%s\" is not a C file\n", args[i]);			       
-		       }
+		String* str = buildStr(args[i], currL);
+		if (has_entry(str) == 0){
+	    if (args[i][currL-1] == 'c' && args[i][currL-2] == '.'){
+				add_entry(str);
+		  } else {
+  			printf("file \"%s\" is not a C file\n", args[i]);
+				discardStr(str);
+		  }
 		} else {
 			printf("file \"%s\" specified twice\n",args[i]);
+			discardStr(str);
 		}
 	}
 	struct stat status;
@@ -295,14 +305,13 @@ int main(int argC, char**args){
 	//int open = 0;
 	String* readStr;
 	String* writeStr;
-	for (int i = 0; i < len; i++){
-		appendStr(baseDir, &files[i]);
+	for (int i = 0; i < f_len; i++){
+		appendStr(baseDir, files[i]);
 		if (stat(baseDir->string, &status) == -1){
 			printf("file %s seems to be unavailable\n", baseDir->string);
-			baseDir->length -= files[i].length;
+			baseDir->length -= files[i]->length;
 			baseDir->string[baseDir->length] = '\0';
-			removeEntry(files, i);
-			len--;
+			remove_entry(i);
 			i--;
 		} else {
 			readStr = cloneStr(baseDir);
@@ -316,7 +325,7 @@ int main(int argC, char**args){
 			} else {
 				printf("checking imports from main file\n");
 				checkImports(read);
-				baseDir->length -= files[i].length;
+				baseDir->length -= files[i]->length;
 				baseDir->string[baseDir->length] = '\0';
 				continue;
 			}
@@ -328,22 +337,22 @@ int main(int argC, char**args){
 					printf("done creating header for %s\n", baseDir->string);
 			}
 			if (write != NULL){
-				printf("free at line 332\n");
-				//fclose(write);
+				//printf("free at line 332\n");
+				fclose(write);
 				//write = NULL;
 			}
 			if (read != NULL){
-				printf("free at line 337\n");
-				//fclose(read);
+				//printf("free at line 337\n");
+				fclose(read);
 				//read = NULL;
 			}
 			//printf("free at line 341\n");
-			//discardStr(readStr);
+			discardStr(readStr);
 			//printf("free at line 343\n");
-			//discardStr(writeStr);
-			baseDir->length -= files[i].length;
+			discardStr(writeStr);
+			baseDir->length -= files[i]->length;
 			baseDir->string[baseDir->length] = '\0';
 		}
 	}
 	return 0;
-}	
+}
