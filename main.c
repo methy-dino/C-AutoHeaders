@@ -173,6 +173,9 @@ void makeHeader(FILE* read, FILE* write){
 				}
 			}
 		}
+		if (mode == FLAG_EMPTY && ((tempStorage[j] == '/' && (tempStorage[j+1] == '/' || tempStorage[j+1] == '*')) || tempStorage[j] == '*')){
+			mode = FLAG_INC;
+		}
 		if (tempStorage[j+1] != '\n' && tempStorage[j+1] && mode == FLAG_EMPTY && bracketDepth == 0){
 			mode = FLAG_GLOB;
 			// basically as a failsafe in case other stuff doesn't detect
@@ -241,7 +244,7 @@ void checkImports(FILE* read){
 					j++;
 				}
 				String* new_entry = emptyStr(32);
-				printf("%s", new_entry->string);
+				//printf("%s", new_entry->string);
 				if (tempStorage[j] == '"'){
 					j++;
 					while (tempStorage[j] != '"'){
@@ -250,7 +253,7 @@ void checkImports(FILE* read){
 					}
 
 					new_entry->string[new_entry->length - 1] = 'c';
-					printf("%s\n", new_entry->string);
+					//printf("%s\n", new_entry->string);
 					import_entry(new_entry);
 				} else {
 					discardStr(new_entry);
