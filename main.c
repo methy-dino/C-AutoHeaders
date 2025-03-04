@@ -305,6 +305,7 @@ int main(int argC, char**args){
 	struct stat status;
 	appendPtr(baseDir, "/", 1);
 	int isMain = 0;
+	char hasMain = 0;
 	//int open = 0;
 	String* readStr;
 	String* writeStr;
@@ -317,28 +318,33 @@ int main(int argC, char**args){
 			remove_entry(i);
 			i--;
 		} else {
-			readStr = cloneStr(baseDir);
-			FILE* read = fopen(readStr->string, "r+");
+			//printf("%s\n ",baseDir->string);
+			//readStr = cloneStr(baseDir);
+			//printf("len val: %u strlen: %u ", readStr->length, strlen(readStr->string));
+			
+			//readStr->string[40] = '\0';
+			FILE* read = fopen(baseDir->string, "r+");
+			if (read == NULL){
+				printf("failed to read file \"%s\"", readStr->string);
+				continue;
+			}
 			FILE* write;
 			isMain = checkMain(baseDir);
 			baseDir->string[baseDir->length - 1] = 'h';
-			writeStr = cloneStr(baseDir);
+			//writeStr = cloneStr(baseDir);
 			if (isMain == 0){
-				write = fopen(writeStr->string, "w+");
+				write = fopen(baseDir->string, "w+");
 			} else {
 				printf("checking imports from main file\n");
 				checkImports(read);
+				hasMain = 1;
 				baseDir->length -= files[i]->length;
 				baseDir->string[baseDir->length] = '\0';
 				continue;
 			}
-			if (read == NULL){
-				printf("failed to read file \"%s\"", baseDir->string);
-			} else {
 					printf("started creating header for %s\n", baseDir->string);
        	  makeHeader(read, write);
 					printf("done creating header for %s\n", baseDir->string);
-			}
 			if (write != NULL){
 				//printf("free at line 332\n");
 				fclose(write);
@@ -350,12 +356,19 @@ int main(int argC, char**args){
 				//read = NULL;
 			}
 			//printf("free at line 341\n");
-			discardStr(readStr);
+			//discardStr(readStr);
 			//printf("free at line 343\n");
-			discardStr(writeStr);
+			//discardStr(writeStr);
 			baseDir->length -= files[i]->length;
 			baseDir->string[baseDir->length] = '\0';
 		}
+	}
+	if (hasMain){
+		printf("this should compile your project (in your current directory): \n gcc -o3 -o exec ");
+		for (unsigned int i = 0; i < f_len; i++){
+			printf("%s ", files[i]->string);
+		}
+		printf("\n");
 	}
 	return 0;
 }
