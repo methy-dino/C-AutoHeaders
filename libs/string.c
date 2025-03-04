@@ -200,15 +200,16 @@ void toLowerCase(String* str){
 /* start inclusive, end exclusive, returns string built with exact capacity.
 */
 String* subStr(String* str, unsigned int start, unsigned int end){
-	start = str->length % start;
-	end = str->length % end;
+	start = start;
+	end = end;
 	String* ret = malloc(sizeof(String));
 	ret->length = end - start;
-	ret->maxCapacity = ret->length;
-	ret->string = (char*) malloc(sizeof(char) * ret->length);
+	ret->maxCapacity = ret->length + 1;
+	ret->string = (char*) malloc(sizeof(char) * (ret->length+1));
 	for (unsigned int i = 0; i < end-start; i++){
 		ret->string[i] = str->string[i+start];
 	}
+    ret->string[ret->length] = '\0';
 	return ret;
 }
 /* start is inclusive, end is exclusive, as by default.

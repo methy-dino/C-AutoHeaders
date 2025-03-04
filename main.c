@@ -20,6 +20,7 @@ int f_len = 0;
 int f_size = 4;
 int confirm = 0;
 int no_add = -1;
+unsigned int cwd_len = 0;
 void grow_arr(int inc){
 	String** n_arr = malloc(sizeof(String*) * (f_size + inc));
 	for (int i = 0; i < f_size; i++){
@@ -157,7 +158,7 @@ void makeHeader(FILE* read, FILE* write){
 				while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
 						j++;
 				}
-				String* newEntry = emptyStr(32);
+				String* newEntry = subStr(baseDir, cwd_len, lastIndexOfChar(baseDir, '/', 0) + 1);
 				//printf("AAA \"%c\" \n", tempStorage[j]);
 				if (tempStorage[j] == '"'){
 					j++;
@@ -243,8 +244,8 @@ void checkImports(FILE* read){
 				while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
 					j++;
 				}
-				String* new_entry = emptyStr(32);
-				//printf("%s", new_entry->string);
+				String* new_entry = subStr(baseDir, cwd_len, lastIndexOfChar(baseDir, '/', 0) + 1);	
+				printf("%s is the new z\n", new_entry->string);
 				if (tempStorage[j] == '"'){
 					j++;
 					while (tempStorage[j] != '"'){
@@ -265,7 +266,9 @@ void checkImports(FILE* read){
 int main(int argC, char**args){
 	char cwd[256]; 
 	getcwd(cwd, 256);
-	baseDir = buildStr(cwd,strlen(cwd));
+	cwd_len = strlen(cwd);
+	baseDir = buildStr(cwd,cwd_len);
+	cwd_len++;
 	files = (String**) malloc(sizeof(String*)*4);
 	int start = 1;
 	int is_spef = 0;
