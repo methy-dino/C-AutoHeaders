@@ -249,7 +249,7 @@ void checkImports(FILE* read){
 					j++;
 				}
 				String* new_entry = subStr(baseDir, cwd_len, lastIndexOfChar(baseDir, '/', 0) + 1);	
-				printf("%s is the new z\n", new_entry->string);
+				//printf("%s is the new z\n", new_entry->string);
 				if (tempStorage[j] == '"'){
 					j++;
 					while (tempStorage[j] != '"'){
