@@ -15,3 +15,8 @@ using "no-add" as an argument before your files will make AutoHeaders IGNORE aut
 
 #### auto-add flag
 using "no-add" as an argument before your files will make AutoHeaders include files automatically, and will set the default prompt response to make it include the file. (this is the default behavior).
+
+#### read-head flag
+using "read-head" as an argument before your files will make AutoHeaders try to read standalone header files (default behavior).
+#### no-read-head flag
+using "no-read-head" as an argument before your files will inhibit standalone header file reading.
