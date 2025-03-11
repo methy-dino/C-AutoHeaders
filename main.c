@@ -316,26 +316,42 @@ int main(int argC, char**args){
 	//int open = 0;
 	String* readStr;
 	String* writeStr;
+  FILE* read;
+	FILE* write;
 	for (int i = 0; i < f_len; i++){
 		appendStr(baseDir, files[i]);
 		if (stat(baseDir->string, &status) == -1){
 			printf("file %s seems to be unavailable\n", baseDir->string);
-			baseDir->length -= files[i]->length;
-			baseDir->string[baseDir->length] = '\0';
-			remove_entry(i);
-			i--;
+			printf(" attempting to read as a standalone header... ");
+				baseDir->string[baseDir->length - 1] = 'h';
+				read = fopen(baseDir->string, "rb+");
+				if (read != NULL){
+					printf("read success!\n");
+					checkImports(read);
+					fclose(read);
+					baseDir->length -= files[i]->length;
+					baseDir->string[baseDir->length] = '\0';
+					remove_entry(i);
+					i--;
+				} else {
+					printf("read failed!\n");
+					baseDir->length -= files[i]->length;
+					baseDir->string[baseDir->length] = '\0';
+					remove_entry(i);
+					i--;
+				}
+				continue;
 		} else {
 			//printf("%s\n ",baseDir->string);
 			//readStr = cloneStr(baseDir);
 			//printf("len val: %u strlen: %u ", readStr->length, strlen(readStr->string));
 			
 			//readStr->string[40] = '\0';
-			FILE* read = fopen(baseDir->string, "r+");
+			read = fopen(baseDir->string, "rb+");
 			if (read == NULL){
-				printf("failed to read file \"%s\"", readStr->string);
+				printf("failed to read file \"%s\".\n", readStr->string);	
 				continue;
 			}
-			FILE* write;
 			isMain = checkMain(baseDir);
 			baseDir->string[baseDir->length - 1] = 'h';
 			//writeStr = cloneStr(baseDir);
