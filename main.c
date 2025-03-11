@@ -2,6 +2,7 @@
 #include <stdio.h> 
 #include <unistd.h>
 #include <string.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/wait.h>
@@ -76,26 +77,35 @@ void import_entry(String* newEntry){
 	if (confirm == 1){
 		printf("found new file: \"%s\", do you wish to include it in the header generation? (y/n) ", newEntry->string);
 		fflush(stdout);
-		struct pollfd mypoll = { STDIN_FILENO, POLLIN|POLLPRI };
+		fd_set input;
+    struct timeval timeout;
 		char answer = '\0';
-		if (poll(&mypoll, 1, 10000)){
-			scanf("%c", &answer);
-			if (answer == 'N' || answer == 'n'){
-				discardStr(newEntry);
-				return;
-			} else if (answer == 'Y' || answer == 'y'){
-				add_entry(newEntry);
-				return;
-			}
-		} else {
-			if (no_add == -1){
-				printf("\nautomatically added file \n");
-				add_entry(newEntry);
-				return;
+		int read_status = 0;
+		while (1){
+			FD_ZERO(&input);
+			FD_SET(STDIN_FILENO, &input);
+			timeout.tv_sec = 10;
+			timeout.tv_usec = 0;
+			read_status = select(1, &input, NULL, NULL, &timeout);
+			if (read_status){
+				read(0,&answer, 1);
+				if (answer == 'N' || answer == 'n'){
+					discardStr(newEntry);
+					return;
+				} else if (answer == 'Y' || answer == 'y'){
+					add_entry(newEntry);
+					return;
+				}
 			} else {
-				printf("\nautomatically rejected file \n");
-				discardStr(newEntry);
-				return;
+				if (no_add == -1){
+					printf("\nautomatically added file \n");
+					add_entry(newEntry);
+					return;
+				} else {
+					printf("\nautomatically rejected file \n");
+					discardStr(newEntry);
+					return;
+				}
 			}
 		}
 	} else {
