@@ -21,6 +21,7 @@ int f_len = 0;
 int f_size = 4;
 int confirm = 0;
 int no_add = -1;
+int read_head = 1;
 unsigned int cwd_len = 0;
 void grow_arr(int inc){
 	String** n_arr = malloc(sizeof(String*) * (f_size + inc));
@@ -296,6 +297,12 @@ int main(int argC, char**args){
 		} else if (strcmp(args[start], "auto-add") == 0){
 			no_add = -1;
 			start++;
+		} else if (strcmp(args[start], "read-head") == 0){
+			read_head = 1;
+			start++;
+		} else if (strcmp(args[start], "no-read-head") == 0){
+			read_head = -1;
+			start++;
 		} else {
 			is_spef = 1;
 		}
@@ -332,25 +339,23 @@ int main(int argC, char**args){
 		appendStr(baseDir, files[i]);
 		if (stat(baseDir->string, &status) == -1){
 			printf("file %s seems to be unavailable\n", baseDir->string);
-			printf(" attempting to read as a standalone header... ");
+			if (read_head == 1) {
+				printf("attempting to read as a standalone header... ");
 				baseDir->string[baseDir->length - 1] = 'h';
 				read = fopen(baseDir->string, "rb+");
 				if (read != NULL){
 					printf("read success!\n");
 					checkImports(read);
 					fclose(read);
-					baseDir->length -= files[i]->length;
-					baseDir->string[baseDir->length] = '\0';
-					remove_entry(i);
-					i--;
 				} else {
 					printf("read failed!\n");
-					baseDir->length -= files[i]->length;
-					baseDir->string[baseDir->length] = '\0';
-					remove_entry(i);
-					i--;
 				}
-				continue;
+			}
+			baseDir->length -= files[i]->length;
+			baseDir->string[baseDir->length] = '\0';
+			remove_entry(i);
+			i--;
+			continue;
 		} else {
 			//printf("%s\n ",baseDir->string);
 			//readStr = cloneStr(baseDir);
