@@ -76,11 +76,14 @@ void import_entry(String* newEntry){
 		return;
 	}
 	if (confirm == 1){
+		unsigned int dot = lastIndexOfChar(newEntry, '.', 0);
+		newEntry->string[dot] = '\0';
 		printf("found new file: \"%s\", do you wish to include it in the header generation? (y/n) ", newEntry->string);
 		fflush(stdout);
+		newEntry->string[dot] = '.';
 		fd_set input;
     struct timeval timeout;
-		char answer = '\0';
+		char answer[64];
 		int read_status = 0;
 		while (1){
 			FD_ZERO(&input);
@@ -89,13 +92,16 @@ void import_entry(String* newEntry){
 			timeout.tv_usec = 0;
 			read_status = select(1, &input, NULL, NULL, &timeout);
 			if (read_status){
-				read(0,&answer, 1);
-				if (answer == 'N' || answer == 'n'){
+				read(0,&answer, 63);
+				if (answer[0] == 'N' || answer[0] == 'n'){
 					discardStr(newEntry);
 					return;
-				} else if (answer == 'Y' || answer == 'y'){
+				} else if (answer[0] == 'Y' || answer[0] == 'y'){
 					add_entry(newEntry);
 					return;
+				} else {
+					printf("Invalid answer, try again ");
+					fflush(stdout);
 				}
 			} else {
 				if (no_add == -1){
@@ -404,7 +410,7 @@ int main(int argC, char**args){
 	if (hasMain){
 		printf("this should compile your project (in your current directory): \n gcc -o3 -o exec ");
 		for (unsigned int i = 0; i < f_len; i++){
-			printf("%s ", files[i]->string);
+			printf("\"%s\" ", files[i]->string);
 		}
 		printf("\n");
 	}
