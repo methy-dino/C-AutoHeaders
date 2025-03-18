@@ -69,7 +69,7 @@ int checkMain(String* fPath){
 	const char struc[] = "struct";
 	const char def[] = "#define";
 	const char inc[] = "#include";
-String* baseDir;
+String* baseDir = NULL;
 void import_entry(String* newEntry){
 	//printf("importing entry: %s \n", newEntry->string);
 	if (has_entry(newEntry) || (no_add == 1 && confirm == 0)){
@@ -284,12 +284,7 @@ void checkImports(FILE* read){
 		}
 	}
 }
-int main(int argC, char**args){
-	char cwd[256]; 
-	getcwd(cwd, 256);
-	cwd_len = strlen(cwd);
-	baseDir = buildStr(cwd,cwd_len);
-	cwd_len++;
+int main(int argC, char**args){	
 	files = (String**) malloc(sizeof(String*)*4);
 	int start = 1;
 	int is_spef = 0;
@@ -309,9 +304,37 @@ int main(int argC, char**args){
 		} else if (strcmp(args[start], "no-read-head") == 0){
 			read_head = -1;
 			start++;
+		} else if (strcmp(args[start], "root-dir") == 0){
+			start++;
+		if (start >= argC){
+			printf("no relative root specified\n");
+			exit(0);
+		}
+		if (baseDir != NULL){
+			discardStr(baseDir);
+		}
+		if (args[start][0]  == '.'){
+			char cwd[256]; 
+			getcwd(cwd, 256);
+			cwd_len = strlen(cwd);
+			baseDir = buildStr(cwd,cwd_len);
+			appendSubPtr(baseDir, args[start], 2, strlen(args[start]));
+			cwd_len++;
+		} else {
+			baseDir = ptrToStr(args[start]);
+		}
+		cwd_len = baseDir->length + 1;
+		start++;
 		} else {
 			is_spef = 1;
 		}
+	}
+	if (baseDir == NULL){
+		char cwd[256]; 
+		getcwd(cwd, 256);
+		cwd_len = strlen(cwd);
+		baseDir = buildStr(cwd,cwd_len);
+		cwd_len++;
 	}
 	if (argC == start){
 		printf("there seems to be no files in your input\n");
