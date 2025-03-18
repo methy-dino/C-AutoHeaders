@@ -1,34 +1,32 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
+#include <string.h>
 #define FORCE_BREAK 2
-typedef struct string{
+typedef struct string {
 	char* string;
 	unsigned int length;
 	unsigned int maxCapacity;
-}String;
+} String;
 void growStr(String* str, unsigned int inc){
 	unsigned int newL = inc + str->maxCapacity;
 	char* nStr = (char*)malloc(newL);
-	for (unsigned int i = 0; i < str->length; i++){
-		nStr[i] = str->string[i];
-	}
+	memcpy(nStr, str->string, str->length);
 	free(str->string);
 	str->string = nStr;
-    str->maxCapacity = newL;
+  str->maxCapacity = newL;
 	str->string[str->length] = '\0';
 }
 void growStrClean(String* str, int inc){
 	unsigned int newL = inc + str->maxCapacity;
 	char* nStr = (char*)calloc(newL, newL);
-	for (unsigned int i = 0; i < str->length; i++){
-		nStr[i] = str->string[i];
-	}
+	memcpy(nStr, str->string, str->length);
 	free(str->string);
 	str->string = nStr;
     str->maxCapacity = newL;
 	str->string[str->length] = '\0';
 }
+/* creates an empty (length 0, string[0] == '\0') string with allocSize */
 String* emptyStr(unsigned int allocSize){
 	String* string  = (String*)malloc(sizeof(struct string));
 	string->maxCapacity = allocSize;
@@ -36,6 +34,8 @@ String* emptyStr(unsigned int allocSize){
 	string->string = (char*)malloc(string->maxCapacity);
 	return string;
 }
+
+/* converts a null terminated char* to a String */
 String* ptrToStr(char* ptr){
 	String* toRet = emptyStr(32);
 	unsigned int i = 0;
@@ -43,36 +43,24 @@ String* ptrToStr(char* ptr){
 		toRet->string[toRet->length] = ptr[i];
 		toRet->length++;
 		if (toRet->length == toRet->maxCapacity - 1){
-			growStr(toRet, 6);
+			growStr(toRet, toRet->length / 2);
 		}
         i++;
 	}
 	toRet->string[toRet->length] = '\0';
 	return toRet;
 }
-/* I don't know why someone would want to initialize like this.
- * It is here anyways.
-*/
-String* charArrToStr(char arr[], unsigned int length){
-	String* string  = (String*)malloc(sizeof(struct string));
-	string->maxCapacity = length*1.5+1;
-	string->length = length;
-	string->string = (char*)malloc(string->maxCapacity);
-	for (unsigned int i = 0; i < length; i++){
-		string->string[i] = arr[i];
-	}
-	string->string[string->length] = '\0';
-	return string;
-}
 
+/* creates a String using a char* with rawStrLen, USING THE POINTER PROVIDED BEWARE.*/
 String* initStr(char* rawStr, unsigned int rawStrLen){
 	String* string  = (String*)malloc(sizeof(struct string));
-	string->maxCapacity = rawStrLen;
+	string->maxCapacity = rawStrLen+1;
 	string->length = rawStrLen;
 	string->string = rawStr;
 	return string;
 }
 
+/* builds a String with spare capacity from the char* with length*/ 
 String* buildStr(char* pointer, unsigned int length){
 		String* string  = (String*)malloc(sizeof(struct string));
 		string->maxCapacity = length*1.5+1;
@@ -84,29 +72,18 @@ String* buildStr(char* pointer, unsigned int length){
 	string->string[string->length] = '\0';
 	return string;
 }
-void appendArr(String* str, char chars[], unsigned int arrL){
-	if (str->maxCapacity < str->length + arrL){
-		growStr(str, (str->length+1) / 2);
-	}
-	for (unsigned int i = 0; i < arrL; i++){
-		str->string[str->length] = chars[i];
-		str->length++;
-	}
-	str->string[str->length] = '\0';
-}
+/* appends only part of a pointer, determined by start and end, does not stop at null terminators.*/
 void appendSubPtr(String* str, char* ptr, int start, int end){
 	if (str->maxCapacity < str->length + (end-start)+1){
-		 growStr(str, (end-start) * 1.5);
-	}
-	for (int i = start; i < end; i++){	
-		str->string[str->length] = ptr[i];
-		str->length++;
-	}
+		 growStr(str, (end-start) * 1.5 + 2);
+	}	
+	memcpy(&str->string[str->length], &ptr[start], end - start);
+	str->length += end - start;
 	str->string[str->length] = '\0';
 }
 void appendChar(String* str, char ch){
 	if (str->length == str->maxCapacity-1){
-		growStr(str, 6);
+		growStr(str, (str->length+1) / 2);
 	}
 	str->string[str->length] = ch;
 	str->length++;
@@ -116,7 +93,7 @@ int appendNoLen(String* str, char* ptr, unsigned int max){
 	unsigned int i = 0;
 	while (ptr[i] != '\0'){
 		if (str->length == str->maxCapacity){
-			growStr(str, 5);
+			growStr(str, (str->length+1) / 2);
 		}
 		str->string[str->length] = ptr[i];
 		str->length++;
@@ -129,7 +106,7 @@ int appendNoLen(String* str, char* ptr, unsigned int max){
 }
 void appendPtr(String* str, char* ptr, unsigned int ptrLen){
 	if (str->maxCapacity < str->length + ptrLen){
-		 growStr(str, ptrLen * 1.5);
+		 growStr(str, (str->length+1) / 2);
 	}
 	for (unsigned int i = 0; i < ptrLen; i++){	
 		str->string[str->length] = ptr[i];
@@ -139,12 +116,9 @@ void appendPtr(String* str, char* ptr, unsigned int ptrLen){
 }
 void appendHeapPtr(String* str, char* ptr, unsigned int ptrLen){
 	if (str->maxCapacity < str->length + ptrLen){
-		 growStr(str, ptrLen * 1.5);
+		 growStr(str, ptrLen * 1.5 + 1);
 	}
 	for (unsigned int i = 0; i < ptrLen; i++){
-		if (str->length == str->maxCapacity){
-			growStr(str, (str->length+1) / 2);   
-		}
 		str->string[str->length] = ptr[i];
 		str->length++;
 	}
@@ -200,16 +174,13 @@ void toLowerCase(String* str){
 /* start inclusive, end exclusive, returns string built with exact capacity.
 */
 String* subStr(String* str, unsigned int start, unsigned int end){
-	start = start;
-	end = end;
+	start = start % str->length;
+	end = end % str->length;
 	String* ret = malloc(sizeof(String));
 	ret->length = end - start;
-	ret->maxCapacity = ret->length + 1;
-	ret->string = (char*) malloc(sizeof(char) * (ret->length+1));
-	for (unsigned int i = 0; i < end-start; i++){
-		ret->string[i] = str->string[i+start];
-	}
-    ret->string[ret->length] = '\0';
+	ret->maxCapacity = ret->length;
+	ret->string = (char*) malloc(sizeof(char) * ret->length);
+	memcpy(ret->string, str->string, ret->length);
 	return ret;
 }
 /* start is inclusive, end is exclusive, as by default.
@@ -327,8 +298,9 @@ unsigned int indexOfStr(String* str, String* subStr, unsigned int startIndex){
 	unsigned int i = 0;
 	while (start < str->length){
 /* must be done in this way, for cases like ("abaabaac", "abaac")
-* since the string start can be messed up by an check advancing after it
-*  It's possible to check if the start is seen, but it has barely any benefit*/
+* since the string start can be messed up by a check advancing after it
+*  It's possible to check if the start is seen, but it has barely any benefit
+*/
 		while (str->string[start+i] == subStr->string[i]){
 			i++;
 			if (i+1 == subStr->length){
@@ -498,9 +470,7 @@ String* cloneStr(String* str){
 	nStr->length = str->length;
 	nStr->maxCapacity = str->maxCapacity;
 	nStr->string = (char*) malloc(sizeof(char) * nStr->maxCapacity);
-	for (unsigned int i = 0; i < nStr->length; i++){
-		nStr->string[i] = str->string[i];
-	}
+	memcpy(nStr->string, str->string, str->length);
 	nStr->string[nStr->length] = '\0';
 	return nStr;
 }
@@ -531,38 +501,50 @@ String* joinStr(String** strings, unsigned int len, String* separator){
 	return joined;
 }
 
+/* splits the String* str by String* divisor, writing the quantity of strings after the split to int* len. */
 String* splitByStr(String* str, String* divisor, unsigned int* len){
 	unsigned int i = 0;
 	unsigned int j = 0;
 	unsigned int prev = 0;
-	String* toRet = malloc(sizeof(String*) * 8);
+	String* toRet = (String*) malloc(sizeof(String) * 8);
 	unsigned int alloc = 8;
 	*len = 0;
-	while (i < str->length - divisor->length){
+	while (i < str->length - divisor->length + 1){
+        j = 0;
 		while(str->string[i+j] == divisor->string[j]){
 			j++;
-			if (divisor->string[j] == '\0'){
-				toRet[*len] = *subStr(str, prev, i);
+			if (divisor->string[j] == '\0'){                
+                String* temp = subStr(str, prev, i);
+				toRet[*len] = *temp;
+                free(temp);
 				i += j;
 				prev = i;
 				*len += 1;
 				if (*len == alloc){
-				alloc += 4;
-				String* newRet = malloc(sizeof(String*) * alloc);
-				for(unsigned int k = 0; k < *len; k++){
-					newRet[k] = toRet[k];
-					}
-				free(toRet);
-				toRet = newRet;
+				    alloc += 4;
+				    String* newRet = (String*) malloc(sizeof(String) * alloc);
+				    for(unsigned int k = 0; k < *len; k++){
+					    newRet[k] = toRet[k];
+				    }
+				    free(toRet);
+				    toRet = newRet;
 				}
+                if (i == str->length){
+                    return toRet;                
+                }
+                break;
 			}
 		}
-		j = 0;
+        i++;
 	}
-	toRet[*len] = *subStr(str, prev, str->length);
-	*len += 1;
+    String* temp = subStr(str, prev, str->length);
+	toRet[*len] = *temp;
+    free(temp);
+    *len += 1;
 	return toRet;
 }
+
+/* reduces the String* str's memory allocation by reduction. */
 void reduceStr(String* str, unsigned int reduction){
 	unsigned int newL = str->maxCapacity - reduction;
 	char* newString = (char*) malloc(newL);
@@ -572,17 +554,25 @@ void reduceStr(String* str, unsigned int reduction){
 	free(str->string);
 	str->string = newString;
 	str->maxCapacity = newL;
-	str->length = newL;
-	str->string[newL] = '\0';
+	str->length = newL-1;
+	str->string[newL-1] = '\0';
 }
+
+/* sets the String* str's memory allocation to be exact with it's current contents*/
 void trimEnd(String* str){
 	reduceStr(str, str->maxCapacity - str->length);
 }
-/* it is a void* to easier integration to libs with need of free functions. */
+/* it is a void* to easier integration to libs with need of free functions.
+ * frees the String* str memory */
 void discardStr(void* str){
 	free(((String*)str)->string);
 	free(str);
 }
+/* verbosity indicates what should be printed: 
+ * 0 prints the string's contents before str->length, using default string printing.
+ * 1 prints the string's address, and it's capacity/filled portion.
+ * 2 will also print control characters by it's escape code, wrapped in ' (i.e '\n' instead of a new line), using a custom printer, and print the char* address.
+ * 3 will print characters after str->length, up to str->maxCapacity*/
 void debugPrintStr(String* str, int verbosity){
 	printf("-  -  -  -\n");
 	if (verbosity > 0){
@@ -602,23 +592,23 @@ void debugPrintStr(String* str, int verbosity){
 		} else {
 			limit = str->maxCapacity;
 		}
-		printf("it's contents are: \"");
+		printf("it has it's char pointer at: %p;\nand it's contents are: \"", (void*)str->string);
 		while (i < limit){
 			switch (str->string[i]){
 				case '\0':
-					printf("\'\\0\'");
+					printf("|\\0|");
 					break;
 				case '\n':
-					printf("\'\\n\'");
+					printf("|\\n|");
 					break;
 				case '\r':
-					printf("\'\\r\'");
+					printf("|\\r|");
 					break;
 				case '\t':
-					printf("\'\\t\'");
+					printf("|\\t|");
 					break;
 				case '\v':
-					printf("\'\\v\'");
+					printf("|\\v|");
 					break;
 				default: 
 					printf("%c", str->string[i]);
