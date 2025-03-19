@@ -313,7 +313,7 @@ int main(int argC, char**args){
 		if (baseDir != NULL){
 			discardStr(baseDir);
 		}
-		if (args[start][0]  == '.'){
+		if (args[start][0]  == '.' && args[start][1] == '/'){
 			char cwd[256]; 
 			getcwd(cwd, 256);
 			cwd_len = strlen(cwd);
