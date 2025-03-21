@@ -180,7 +180,7 @@ String* subStr(String* str, unsigned int start, unsigned int end){
 	ret->length = end - start;
 	ret->maxCapacity = ret->length;
 	ret->string = (char*) malloc(sizeof(char) * ret->length);
-	memcpy(ret->string, str->string, ret->length);
+	memcpy(ret->string, str->string + start, ret->length);
 	return ret;
 }
 /* start is inclusive, end is exclusive, as by default.
