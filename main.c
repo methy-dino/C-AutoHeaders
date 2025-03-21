@@ -204,7 +204,9 @@ void makeHeader(FILE* read, FILE* write){
 		}
 		if (mode != FLAG_INC){
 			while (tempStorage[j] != '\0'){
-				if (tempStorage[j] == '{'){
+				if (tempStorage[j] == '='){
+					mode = FLAG_TDEF;
+				} else if (tempStorage[j] == '{'){
 					bracketDepth++;
 					if ((mode == FLAG_GLOB || mode == FLAG_EMPTY) && bracketDepth == 1){
 						appendNoLen(toAppend, tempStorage, 512);
