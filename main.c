@@ -204,7 +204,7 @@ void makeHeader(FILE* read, FILE* write){
 		}
 		if (mode != FLAG_INC){
 			while (tempStorage[j] != '\0'){
-				if (tempStorage[j] == '='){
+				if (tempStorage[j] == '=' && mode != FLAG_FUNCTION){
 					mode = FLAG_TDEF;
 				} else if (tempStorage[j] == '{'){
 					bracketDepth++;
