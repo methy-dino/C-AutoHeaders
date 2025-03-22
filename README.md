@@ -20,3 +20,5 @@ using "no-add" as an argument before your files will make AutoHeaders include fi
 using "read-head" as an argument before your files will make AutoHeaders try to read standalone header files (default behavior).
 #### no-read-head flag
 using "no-read-head" as an argument before your files will inhibit standalone header file reading.
+#### root-dir flag
+Using root-dir as an argument will mark the next argument as the 'root', or current working directory of the application, reading files relative to it.
