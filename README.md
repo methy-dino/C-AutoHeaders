@@ -22,3 +22,8 @@ using "read-head" as an argument before your files will make AutoHeaders try to 
 using "no-read-head" as an argument before your files will inhibit standalone header file reading.
 #### root-dir flag
 Using root-dir as an argument will mark the next argument as the 'root', or current working directory of the application, reading files relative to it.
+<<<<<<< HEAD
+=======
+#### read-only flag
+Using this flag will make autoHeaders only 'check' for imports, in case it is desired to use automatic the project compile suggestion.
+>>>>>>> 03c5af1 (Version 0.2.0 - new flags.)

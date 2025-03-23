@@ -22,6 +22,7 @@ int f_size = 4;
 int confirm = 0;
 int no_add = -1;
 int read_head = 1;
+int read_only = 0;
 unsigned int cwd_len = 0;
 void grow_arr(int inc){
 	String** n_arr = malloc(sizeof(String*) * (f_size + inc));
@@ -327,6 +328,9 @@ int main(int argC, char**args){
 		}
 		cwd_len = baseDir->length + 1;
 		start++;
+		} else if (strcmp(args[start], "read-only") == 0) {
+			read_only = 1;
+			start++;
 		} else {
 			is_spef = 1;
 		}
@@ -369,7 +373,7 @@ int main(int argC, char**args){
 	for (int i = 0; i < f_len; i++){
 		appendStr(baseDir, files[i]);
 		if (stat(baseDir->string, &status) == -1){
-			printf("file %s seems to be unavailable\n", baseDir->string);
+			printf("file \"%s\" seems to be unavailable\n", baseDir->string);
 			if (read_head == 1) {
 				printf("attempting to read as a standalone header... ");
 				baseDir->string[baseDir->length - 1] = 'h';
@@ -401,12 +405,16 @@ int main(int argC, char**args){
 			isMain = checkMain(baseDir);
 			baseDir->string[baseDir->length - 1] = 'h';
 			//writeStr = cloneStr(baseDir);
-			if (isMain == 0){
+			if (isMain == 0 && read_only == 0){
 				write = fopen(baseDir->string, "w+");
 			} else {
-				printf("checking imports from main file\n");
+				if (isMain == 1){
+					hasMain = 1;
+					printf("checking imports from main file\n");
+				} else {
+					printf("checking imports from file \"%s\" \n", baseDir->string);
+				}
 				checkImports(read);
-				hasMain = 1;
 				baseDir->length -= files[i]->length;
 				baseDir->string[baseDir->length] = '\0';
 				continue;
