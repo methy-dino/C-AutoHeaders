@@ -10,8 +10,8 @@ typedef struct string {
 	unsigned int length;
 	unsigned int maxCapacity;
 } String;
-void growStr(String* str, unsigned int inc);
-void growStrClean(String* str, int inc);
+int growStr(String* str, unsigned int inc);
+int growStrClean(String* str, int inc);
 /* creates an empty (length 0, string[0] == '\0') string with allocSize */
 String* emptyStr(unsigned int allocSize);
 /* converts a null terminated char* to a String */
@@ -22,9 +22,11 @@ String* initStr(char* rawStr, unsigned int rawStrLen);
 String* buildStr(char* pointer, unsigned int length);
 /* appends only part of a pointer, determined by start and end, does not stop at null terminators.*/
 void appendSubPtr(String* str, char* ptr, int start, int end);
+int prependSubPtr(String* str, char* ptr, int start, int end);
 void appendChar(String* str, char ch);
 int appendNoLen(String* str, char* ptr, unsigned int max);
 void appendPtr(String* str, char* ptr, unsigned int ptrLen);
+int prependPtr(String* str, char* ptr, unsigned int ptrLen);
 void appendHeapPtr(String* str, char* ptr, unsigned int ptrLen);
 void appendStr(String* str, String* toAppend);
 String* concatStr(String* str, String* toAppend);

@@ -2,50 +2,72 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
+#include "string.h"
 #define FORCE_BREAK 2
-typedef struct string {
-	char* string;
-	unsigned int length;
-	unsigned int maxCapacity;
-} String;
-void growStr(String* str, unsigned int inc){
+//typedef struct string {
+	//char* string;
+	//unsigned int length;
+	//unsigned int maxCapacity;
+//} String;
+int growStr(String* str, unsigned int inc){
 	unsigned int newL = inc + str->maxCapacity;
 	char* nStr = (char*)malloc(newL);
+	if (nStr == NULL){
+		return 1;
+	}
 	memcpy(nStr, str->string, str->length);
 	free(str->string);
 	str->string = nStr;
   str->maxCapacity = newL;
 	str->string[str->length] = '\0';
+	return 0;
 }
-void growStrClean(String* str, int inc){
+int growStrClean(String* str, int inc){
 	unsigned int newL = inc + str->maxCapacity;
 	char* nStr = (char*)calloc(newL, newL);
+	if (nStr == NULL){
+		return 1;
+	}
 	memcpy(nStr, str->string, str->length);
 	free(str->string);
 	str->string = nStr;
     str->maxCapacity = newL;
 	str->string[str->length] = '\0';
+	return 0;
 }
 /* creates an empty (length 0, string[0] == '\0') string with allocSize */
 String* emptyStr(unsigned int allocSize){
 	String* string  = (String*)malloc(sizeof(struct string));
+	if (string == NULL){
+		return NULL;
+	}
 	string->maxCapacity = allocSize;
 	string->length = 0;
 	string->string = (char*)malloc(string->maxCapacity);
+	if (string->string == NULL){
+		free(string);
+		return NULL;
+	}
 	return string;
 }
 
 /* converts a null terminated char* to a String */
 String* ptrToStr(char* ptr){
 	String* toRet = emptyStr(32);
+	if (toRet == NULL){
+		return NULL;
+	}
 	unsigned int i = 0;
 	while (ptr[i] != '\0'){
 		toRet->string[toRet->length] = ptr[i];
 		toRet->length++;
 		if (toRet->length == toRet->maxCapacity - 1){
-			growStr(toRet, toRet->length / 2);
+			if (growStr(toRet, toRet->length / 2) == 1){
+				discardStr(toRet);
+				return NULL;
+			}
 		}
-        i++;
+      i++;
 	}
 	toRet->string[toRet->length] = '\0';
 	return toRet;
@@ -81,6 +103,19 @@ void appendSubPtr(String* str, char* ptr, int start, int end){
 	str->length += end - start;
 	str->string[str->length] = '\0';
 }
+int prependSubPtr(String* str, char* ptr, int start, int end){
+	if (str->maxCapacity < str->length + (end-start)+1){
+		if (growStr(str, (end-start) * 1.5 + 2)){
+            return 1;    
+        }
+	}	
+	memcpy(&str->string[end-start], &str->string[0], str->length);
+	memcpy(&str->string[0], &ptr[start], end-start);
+	str->length += end - start;
+	str->string[str->length] = '\0';
+    return 0;
+}
+
 void appendChar(String* str, char ch){
 	if (str->length == str->maxCapacity-1){
 		growStr(str, (str->length+1) / 2);
@@ -113,6 +148,18 @@ void appendPtr(String* str, char* ptr, unsigned int ptrLen){
 		str->length++;
 	}
 	str->string[str->length] = '\0';
+}
+int prependPtr(String* str, char* ptr, unsigned int ptrLen){
+	if (str->maxCapacity < str->length + ptrLen){
+		if (growStr(str, ptrLen * 1.5 + 2)){
+            return 1;    
+        }       
+	}	
+	memcpy(&str->string[ptrLen], &str->string[0], str->length);
+	memcpy(&str->string[0], ptr, ptrLen);
+	str->length += ptrLen;
+	str->string[str->length] = '\0';
+    return 0;
 }
 void appendHeapPtr(String* str, char* ptr, unsigned int ptrLen){
 	if (str->maxCapacity < str->length + ptrLen){
