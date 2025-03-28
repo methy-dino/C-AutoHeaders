@@ -208,7 +208,7 @@ void makeHeader(FILE* read, FILE* write){
 		if (mode != FLAG_INC && mode != FLAG_VAR){
 			while (tempStorage[j] != '\0'){
 				if (tempStorage[j] == '=' && mode != FLAG_FUNCTION && mode != FLAG_TDEF && mode != FLAG_DEF){
-					printf("found globs with mode as: %d\n", mode);
+					//printf("found globs with mode as: %d\n", mode);
 					mode = FLAG_INC;
 					j--;
 					while (tempStorage[j] == '	' || tempStorage[j] == ' '){
@@ -218,10 +218,11 @@ void makeHeader(FILE* read, FILE* write){
 					appendSubPtr(toAppend, tempStorage, 0, j+1);
 					appendPtr(toAppend, ";\n", 2);
 					fputs(toAppend->string, write);
+					mode = FLAG_EMPTY;
 					break;
 				} else if (tempStorage[j] == '{'){
 					bracketDepth++;
-printf("MODE IS %d \n", mode);
+//printf("MODE IS %d \n", mode);
 
 					if ((mode == FLAG_GLOB || mode == FLAG_EMPTY) && bracketDepth == 1){
 						appendNoLen(toAppend, tempStorage, 512);
