@@ -69,6 +69,8 @@ int checkMain(String* fPath){
 }
 	const char type[8] = "typedef";
 	const char struc[] = "struct";
+	const char uni[] = "union";
+	const char enu[] = "enum";
 	const char def[] = "#define";
 	const char inc[] = "#include";
 String* baseDir = NULL;
@@ -158,6 +160,22 @@ void makeHeader(FILE* read, FILE* write){
 		while (tempStorage[j+k] == struc[k] && mode != FLAG_FUNCTION){
 			k++;
 			if (struc[k] == '\0'){
+				j += k;
+				mode = FLAG_TDEF;
+			}
+		}
+		k = 0;
+		while (tempStorage[j+k] == enu[k] && mode != FLAG_FUNCTION){
+			k++;
+			if (enu[k] == '\0'){
+				j += k;
+				mode = FLAG_TDEF;
+			}
+		}
+		k = 0;
+		while (tempStorage[j+k] == uni[k] && mode != FLAG_FUNCTION){
+			k++;
+			if (uni[k] == '\0'){
 				j += k;
 				mode = FLAG_TDEF;
 			}
