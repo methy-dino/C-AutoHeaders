@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <poll.h>
 #include "libs/string.h"
+#include "libs/gaymer_print.h"
 #define FLAG_DEF 4
 #define FLAG_INC 3
 #define FLAG_FUNCTION 1
@@ -82,7 +83,9 @@ void import_entry(String* newEntry){
 	if (confirm == 1){
 		unsigned int dot = lastIndexOfChar(newEntry, '.', 0);
 		newEntry->string[dot] = '\0';
-		printf("found new file: \"%s\", do you wish to include it in the header generation? (y/n) ", newEntry->string);
+		gaymer_print("found new file: \"");
+		gaymer_print(newEntry->string);
+		gaymer_print("\", do you wish to include it in the header generation? (y/n) ");
 		fflush(stdout);
 		newEntry->string[dot] = '.';
 		fd_set input;
@@ -104,16 +107,16 @@ void import_entry(String* newEntry){
 					add_entry(newEntry);
 					return;
 				} else {
-					printf("Invalid answer, try again ");
+					gaymer_print("Invalid answer, try again ");
 					fflush(stdout);
 				}
 			} else {
 				if (no_add == -1){
-					printf("\nautomatically added file \n");
+					gaymer_print("\nautomatically added file \n");
 					add_entry(newEntry);
 					return;
 				} else {
-					printf("\nautomatically rejected file \n");
+					gaymer_print("\nautomatically rejected file \n");
 					discardStr(newEntry);
 					return;
 				}
@@ -121,7 +124,9 @@ void import_entry(String* newEntry){
 		}
 	} else {
 		if (no_add == -1){
-			printf("found new file: \"%s\"\n", newEntry->string);
+			gaymer_print("found new file: \"");
+			gaymer_print(newEntry->string);
+			gaymer_print("\"\n");
 			add_entry(newEntry);
 		} else {
 			discardStr(newEntry);
@@ -272,7 +277,6 @@ void makeHeader(FILE* read, FILE* write){
 			//printf("%s", tempStorage);
 			fputs(tempStorage, write);
 			if (bracketDepth == 0){
-				printf("reset mode \n");
 				mode = FLAG_EMPTY;
 			}
 		} else if (mode == FLAG_INC){
@@ -378,7 +382,7 @@ int main(int argC, char**args){
 		cwd_len++;
 	}
 	if (argC == start){
-		printf("there seems to be no files in your input\n");
+		gaymer_print("there seems to be no files in your input\n");
 		return 0;
 	}
 	for (int i = start; i < argC; i++){
@@ -388,11 +392,15 @@ int main(int argC, char**args){
 	    if (args[i][currL-1] == 'c' && args[i][currL-2] == '.'){
 				add_entry(str);
 		  } else {
-  			printf("file \"%s\" is not a C file\n", args[i]);
+  			gaymer_print("file \"");
+				gaymer_print(args[i]);
+				gaymer_print("\" is not a C file");
 				discardStr(str);
 		  }
 		} else {
-			printf("file \"%s\" specified twice\n",args[i]);
+			gaymer_print("file \"");
+			gaymer_print(args[i]);
+			gaymer_print("\" specified twice\n");
 			discardStr(str);
 		}
 	}
@@ -408,17 +416,19 @@ int main(int argC, char**args){
 	for (int i = 0; i < f_len; i++){
 		appendStr(baseDir, files[i]);
 		if (stat(baseDir->string, &status) == -1){
-			printf("file \"%s\" seems to be unavailable\n", baseDir->string);
+			gaymer_print("file \"");
+			gaymer_print(baseDir->string);
+			gaymer_print("\" seems to be unavailable\n");
 			if (read_head == 1) {
-				printf("attempting to read as a standalone header... ");
+				gaymer_print("attempting to read as a standalone header... ");
 				baseDir->string[baseDir->length - 1] = 'h';
 				read = fopen(baseDir->string, "rb+");
 				if (read != NULL){
-					printf("read success!\n");
+					gaymer_print("read success!\n");
 					checkImports(read);
 					fclose(read);
 				} else {
-					printf("read failed!\n");
+					gaymer_print("read failed!\n");
 				}
 			}
 			baseDir->length -= files[i]->length;
@@ -434,7 +444,9 @@ int main(int argC, char**args){
 			//readStr->string[40] = '\0';
 			read = fopen(baseDir->string, "rb+");
 			if (read == NULL){
-				printf("failed to read file \"%s\".\n", readStr->string);	
+				gaymer_print("failed to read file \"");
+				gaymer_print(baseDir->string);
+				gaymer_print("\".\n");	
 				continue;
 			}
 			isMain = checkMain(baseDir);
@@ -445,18 +457,24 @@ int main(int argC, char**args){
 			} else {
 				if (isMain == 1){
 					hasMain = 1;
-					printf("checking imports from main file\n");
+					gaymer_print("checking imports from main file\n");
 				} else {
-					printf("checking imports from file \"%s\" \n", baseDir->string);
+					gaymer_print("checking imports from file \"");
+					gaymer_print(baseDir->string);
+					gaymer_print("\" \n");
 				}
 				checkImports(read);
 				baseDir->length -= files[i]->length;
 				baseDir->string[baseDir->length] = '\0';
 				continue;
 			}
-					printf("started creating header for %s\n", baseDir->string);
+					gaymer_print("started creating header for ");
+					gaymer_print(baseDir->string);
+					printf("\n");
        	  makeHeader(read, write);
-					printf("done creating header for %s\n", baseDir->string);
+					gaymer_print("done creating header for ");
+					gaymer_print(baseDir->string);
+					printf("\n");
 			if (write != NULL){
 				//printf("free at line 332\n");
 				fclose(write);
@@ -476,9 +494,11 @@ int main(int argC, char**args){
 		}
 	}
 	if (hasMain){
-		printf("this should compile your project (in your current directory): \n gcc -o3 -o exec ");
+		gaymer_print("this should compile your project (in your current directory): \ngcc -o3 -o exec ");
 		for (unsigned int i = 0; i < f_len; i++){
-			printf("\"%s\" ", files[i]->string);
+			gaymer_print("\"");
+			gaymer_print(files[i]->string);
+			gaymer_print("\" ");
 		}
 		printf("\n");
 	}
