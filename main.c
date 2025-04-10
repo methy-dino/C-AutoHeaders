@@ -16,12 +16,17 @@
 #define FLAG_TDEF 5
 #define FLAG_EMPTY 0
 #define FLAG_VAR 6
+/* data used for confirm prompt*/
+#define CHECK_BIT(data, quantity) ((data >> quantity) & 1)
+#define FILE_IND 0
+#define FUNC_IND 1
+#define DEF_IND 2
 // dum dum
 String** files;
 int f_len = 0;
 int f_size = 4;
-int confirm = 0;
-int no_add = -1;
+unsigned int confirm = 0;
+unsigned int no_add = 0;
 int read_head = 1;
 int read_only = 0;
 unsigned int cwd_len = 0;
@@ -73,7 +78,8 @@ int checkMain(String* fPath){
 	const char def[] = "#define";
 	const char inc[] = "#include";
 String* baseDir = NULL;
-char confirm_prompt(){
+char confirm_prompt(char conf_bit){
+		fflush(stdout);
 		fd_set input;
     struct timeval timeout;
 		char answer[64];
@@ -101,7 +107,7 @@ char confirm_prompt(){
 				fflush(stdout);
 			}
 		} else {
-			if (no_add == 0){
+			if (CHECK_BIT(no_add, conf_bit)){
 				printf("\nautomatically denied \n");
 				return 0;
 			} else {
@@ -112,23 +118,37 @@ char confirm_prompt(){
 	}
 	return 0;
 }
+char def_check(char* file_line){
+	if (CHECK_BIT(confirm, DEF_IND)){
+		printf("found definition \"%s\", do you wish to include it? (y/n) ", file_line);
+		return confirm_prompt(DEF_IND);
+	}
+	return CHECK_BIT(no_add, DEF_IND);
+}
+char fn_check(char* file_line){
+	if (CHECK_BIT(confirm, FUNC_IND)){
+		printf("found function \"%s\", do you wish to include it? (y/n) ", file_line);
+		return confirm_prompt(FUNC_IND);
+	}
+	return !CHECK_BIT(no_add, FUNC_IND);
+}
 void import_entry(String* newEntry){
 	if (has_entry(newEntry) || (no_add == 1 && confirm == 0)){
 		return;
 	}
-	if (confirm == 1){
+	if (CHECK_BIT(confirm, FILE_IND)){
 		unsigned int dot = lastIndexOfChar(newEntry, '.', 0);
 		newEntry->string[dot] = '\0';
 		printf("found new file: \"%s\", do you wish to include it in the header generation? (y/n) ", newEntry->string);
 		fflush(stdout);
 		newEntry->string[dot] = '.';
-		if (confirm_prompt() == 1){
-			import_entry(newEntry);
+		if (confirm_prompt(FILE_IND) == 1){
+			add_entry(newEntry);
 		} else {
 			discardStr(newEntry);
 		}
 	} else {
-		if (no_add == -1){
+		if (CHECK_BIT(no_add, FILE_IND) == 0){
 			printf("found new file: \"%s\"\n", newEntry->string);
 			add_entry(newEntry);
 		} else {
@@ -161,7 +181,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (type[k] == '\0'){
 				j += k;
-				mode = FLAG_TDEF;
+				mode = def_check(tempStorage) ? FLAG_FUNCTION : FLAG_TDEF;
 			}
 		}
 		k = 0;
@@ -169,7 +189,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (struc[k] == '\0'){
 				j += k;
-				mode = FLAG_TDEF;
+				mode = def_check(tempStorage) ? FLAG_FUNCTION : FLAG_TDEF;
 			}
 		}
 		k = 0;
@@ -177,7 +197,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (enu[k] == '\0'){
 				j += k;
-				mode = FLAG_TDEF;
+				mode = def_check(tempStorage) ? FLAG_FUNCTION : FLAG_TDEF;
 			}
 		}
 		k = 0;
@@ -185,7 +205,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (uni[k] == '\0'){
 				j += k;
-				mode = FLAG_TDEF;
+				mode = def_check(tempStorage) ? FLAG_FUNCTION : FLAG_TDEF;
 			}
 		}
 		k = 0;
@@ -193,7 +213,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (def[k] == '\0'){
 				j += k;
-				mode = FLAG_DEF;
+				mode = def_check(tempStorage) ? FLAG_FUNCTION : FLAG_DEF;
 			}
 		}
 		k = 0;
@@ -246,8 +266,10 @@ void makeHeader(FILE* read, FILE* write){
 						toAppend->string[j] = ';';
 						toAppend->string[j+1] = '\0';
 						toAppend->length = j+1;
-						appendPtr(toAppend, "\n", 1);
-						fputs(toAppend->string, write);
+						if (fn_check(toAppend->string)){
+							appendPtr(toAppend, "\n", 1);
+							fputs(toAppend->string, write);
+						}
 						mode = FLAG_FUNCTION;
 					}
 				} else if (tempStorage[j] == '}') {
@@ -258,6 +280,9 @@ void makeHeader(FILE* read, FILE* write){
 				}
 				j++; 
 			}
+		}
+		if (mode == FLAG_FUNCTION && bracketDepth == 0){
+			mode = FLAG_EMPTY;
 		}
 		if (mode == FLAG_DEF){
 			fputs(tempStorage, write);
@@ -319,12 +344,31 @@ int main(int argC, char**args){
 	files = (String**) malloc(sizeof(String*)*4);
 	int start = 1;
 	int is_spef = 0;
+
 	while (is_spef == 0 && argC > start){
-		if (strcmp(args[start], "confirm") == 0){
-			confirm = 1;
+		if (strcmp(args[start], "confirm-file") == 0){
+			confirm = confirm | (1 << FILE_IND);
 			start++;
-		} else if (strcmp(args[start], "no-add") == 0){
-			no_add = 1;
+		} else if (strcmp(args[start], "confirm-func") == 0){
+			confirm = confirm | (1 << FUNC_IND);
+			start++;
+		} else if (strcmp(args[start], "confirm-def") == 0){
+			confirm = confirm | (1 << DEF_IND);
+			start++;
+		} else if (strcmp(args[start], "confirm-all") == 0){
+			confirm = confirm | (1 << FILE_IND) | (1 << FUNC_IND) | (1 << DEF_IND);
+			start++;
+		} else if (strcmp(args[start], "no-add-file") == 0){
+			no_add = no_add | (1 << FILE_IND);
+			start++;
+		} else if (strcmp(args[start], "no-add-func") == 0){
+			no_add = no_add | (1 << FUNC_IND);
+			start++;
+		} else if (strcmp(args[start], "no-add-def") == 0){
+			no_add = no_add | (1 << DEF_IND);
+			start++;
+		} else if (strcmp(args[start], "no-add-all") == 0){
+			no_add = no_add | (1 << FILE_IND) | (1 << FUNC_IND) | (1 << FUNC_IND);
 			start++;
 		} else if (strcmp(args[start], "auto-add") == 0){
 			no_add = -1;
