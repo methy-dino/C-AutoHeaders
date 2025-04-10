@@ -73,6 +73,45 @@ int checkMain(String* fPath){
 	const char def[] = "#define";
 	const char inc[] = "#include";
 String* baseDir = NULL;
+char confirm_prompt(){
+		fd_set input;
+    struct timeval timeout;
+		char answer[64];
+		int read_status = 0;
+		size_t total;
+	while (1){
+		FD_ZERO(&input);
+		FD_SET(STDIN_FILENO, &input);
+		timeout.tv_sec = 10;
+		timeout.tv_usec = 0;
+		read_status = select(1, &input, NULL, NULL, &timeout);
+		if (read_status){
+			total = read(0,&answer, 63);
+			if (total != 2){
+				printf("Invalid answer, try again (y/n) ");
+				fflush(stdout);
+				continue;
+			}
+			if (answer[0] == 'N' || answer[0] == 'n'){
+				return 0;
+			} else if (answer[0] == 'Y' || answer[0] == 'y'){
+				return 1;
+			} else {
+				printf("Invalid answer, try again (y/n) ");
+				fflush(stdout);
+			}
+		} else {
+			if (no_add == 0){
+				printf("\nautomatically denied \n");
+				return 0;
+			} else {
+				printf("\nautomatically confirmed \n");
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
 void import_entry(String* newEntry){
 	if (has_entry(newEntry) || (no_add == 1 && confirm == 0)){
 		return;
@@ -83,39 +122,10 @@ void import_entry(String* newEntry){
 		printf("found new file: \"%s\", do you wish to include it in the header generation? (y/n) ", newEntry->string);
 		fflush(stdout);
 		newEntry->string[dot] = '.';
-		fd_set input;
-    struct timeval timeout;
-		char answer[64];
-		int read_status = 0;
-		while (1){
-			FD_ZERO(&input);
-			FD_SET(STDIN_FILENO, &input);
-			timeout.tv_sec = 10;
-			timeout.tv_usec = 0;
-			read_status = select(1, &input, NULL, NULL, &timeout);
-			if (read_status){
-				read(0,&answer, 63);
-				if (answer[0] == 'N' || answer[0] == 'n'){
-					discardStr(newEntry);
-					return;
-				} else if (answer[0] == 'Y' || answer[0] == 'y'){
-					add_entry(newEntry);
-					return;
-				} else {
-					printf("Invalid answer, try again ");
-					fflush(stdout);
-				}
-			} else {
-				if (no_add == -1){
-					printf("\nautomatically added file \n");
-					add_entry(newEntry);
-					return;
-				} else {
-					printf("\nautomatically rejected file \n");
-					discardStr(newEntry);
-					return;
-				}
-			}
+		if (confirm_prompt() == 1){
+			import_entry(newEntry);
+		} else {
+			discardStr(newEntry);
 		}
 	} else {
 		if (no_add == -1){
