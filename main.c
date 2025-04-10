@@ -120,14 +120,14 @@ char confirm_prompt(char conf_bit){
 }
 char def_check(char* file_line){
 	if (CHECK_BIT(confirm, DEF_IND)){
-		printf("found definition \"%s\", do you wish to include it? (y/n) ", file_line);
+		printf("found definition:\n%sdo you wish to include it? (y/n) ", file_line);
 		return confirm_prompt(DEF_IND);
 	}
 	return CHECK_BIT(no_add, DEF_IND);
 }
 char fn_check(char* file_line){
 	if (CHECK_BIT(confirm, FUNC_IND)){
-		printf("found function \"%s\", do you wish to include it? (y/n) ", file_line);
+		printf("found function:\n%sdo you wish to include it? (y/n) ", file_line);
 		return confirm_prompt(FUNC_IND);
 	}
 	return !CHECK_BIT(no_add, FUNC_IND);
@@ -139,7 +139,7 @@ void import_entry(String* newEntry){
 	if (CHECK_BIT(confirm, FILE_IND)){
 		unsigned int dot = lastIndexOfChar(newEntry, '.', 0);
 		newEntry->string[dot] = '\0';
-		printf("found new file: \"%s\", do you wish to include it in the header generation? (y/n) ", newEntry->string);
+		printf("found new file:\n%s\ndo you wish to include it in the header generation? (y/n) ", newEntry->string);
 		fflush(stdout);
 		newEntry->string[dot] = '.';
 		if (confirm_prompt(FILE_IND) == 1){
@@ -255,7 +255,9 @@ void makeHeader(FILE* read, FILE* write){
 					appendNoLen(toAppend, "extern ", 20);
 					appendSubPtr(toAppend, tempStorage, 0, j+1);
 					appendPtr(toAppend, ";\n", 2);
-					fputs(toAppend->string, write);
+					if (def_check(tempStorage)){
+							fputs(toAppend->string, write);
+					}
 					mode = FLAG_EMPTY;
 					break;
 				} else if (tempStorage[j] == '{'){
@@ -266,8 +268,8 @@ void makeHeader(FILE* read, FILE* write){
 						toAppend->string[j] = ';';
 						toAppend->string[j+1] = '\0';
 						toAppend->length = j+1;
+						appendPtr(toAppend, "\n", 1);
 						if (fn_check(toAppend->string)){
-							appendPtr(toAppend, "\n", 1);
 							fputs(toAppend->string, write);
 						}
 						mode = FLAG_FUNCTION;
@@ -370,9 +372,6 @@ int main(int argC, char**args){
 		} else if (strcmp(args[start], "no-add-all") == 0){
 			no_add = no_add | (1 << FILE_IND) | (1 << FUNC_IND) | (1 << FUNC_IND);
 			start++;
-		} else if (strcmp(args[start], "auto-add") == 0){
-			no_add = -1;
-			start++;
 		} else if (strcmp(args[start], "read-head") == 0){
 			read_head = 1;
 			start++;
@@ -387,6 +386,7 @@ int main(int argC, char**args){
 		}
 		if (baseDir != NULL){
 			discardStr(baseDir);
+			baseDir == NULL;
 		}
 		if (args[start][0]  == '.' && args[start][1] == '/'){
 			char cwd[256]; 
