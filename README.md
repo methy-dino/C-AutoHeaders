@@ -7,14 +7,19 @@ Every C project has a main file, which may import many functions from other C fi
 ### the AutoHeader specifications
 AutoHeader takes file names as inputs, but before those, it analyzes if there are any specification flags to the header generation.
 
-#### confirm flag
-using "confirm" as an argument before your files will make AutoHeaders ask for confirmation before including a found import to the automatic header generation, that confirmation prompt has a timeout of 20 seconds.
-
-#### no-add flag
-using "no-add" as an argument before your files will make AutoHeaders IGNORE automatic inclusions, and will change the default prompt response to make it not include files after a timeout.
-
-#### auto-add flag
-using "no-add" as an argument before your files will make AutoHeaders include files automatically, and will set the default prompt response to make it include the file. (this is the default behavior).
+#### confirm flag family
+using one of the "confirm" arguments/flags before your files will make AutoHeaders ask for confirmation before including a found import to the automatic header generation, that confirmation prompt has a timeout of 20 seconds. \
+these arguments/flags are: \
+"confirm-func", asks for confimation before adding functions to the header file.\
+"confirm-def", asks for confirmation before adding definitions (i.e. typedef/#define/struct definitions) to the header file.\
+"confirm-file", asks for confirmation before adding a file to the header making list.\
+"confirm-all" enables all previous.
+#### no-add flag family
+using one of the "no-add" arguments/flags before your files will make AutoHeaders IGNORE automatic inclusions, and will change the default prompt response to make it not include files after a timeout.
+"no-add-func", changes addition of functions to the header file.\
+"no-add-def", changes addition of definitions (i.e. typedef/#define/struct definitions) to the header file.\
+"no-add-file", changes additions of files to the header making list.\
+"no-read-all" enables all previous.
 
 #### read-head flag
 using "read-head" as an argument before your files will make AutoHeaders try to read standalone header files (default behavior).
