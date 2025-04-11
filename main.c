@@ -125,7 +125,7 @@ char def_check(char* file_line){
 		printf("found definition:\n%sdo you wish to include it? (y/n) ", file_line);
 		return confirm_prompt(DEF_IND);
 	}
-	return CHECK_BIT(no_add, DEF_IND);
+	return !CHECK_BIT(no_add, DEF_IND);
 }
 char fn_check(char* file_line){
 	if (CHECK_BIT(confirm, FUNC_IND)){
@@ -183,7 +183,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (type[k] == '\0'){
 				j += k;
-				mode = def_check(tempStorage) ? FLAG_FUNCTION : FLAG_TDEF;
+				mode = def_check(tempStorage) ? FLAG_TDEF : FLAG_FUNCTION;
 			}
 		}
 		k = 0;
@@ -191,7 +191,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (struc[k] == '\0'){
 				j += k;
-				mode = def_check(tempStorage) ? FLAG_FUNCTION : FLAG_TDEF;
+				mode = def_check(tempStorage) ? FLAG_TDEF : FLAG_FUNCTION;
 			}
 		}
 		k = 0;
@@ -199,7 +199,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (enu[k] == '\0'){
 				j += k;
-				mode = def_check(tempStorage) ? FLAG_FUNCTION : FLAG_TDEF;
+				mode = def_check(tempStorage) ? FLAG_TDEF : FLAG_FUNCTION;
 			}
 		}
 		k = 0;
@@ -207,7 +207,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (uni[k] == '\0'){
 				j += k;
-				mode = def_check(tempStorage) ? FLAG_FUNCTION : FLAG_TDEF;
+				mode = def_check(tempStorage) ? FLAG_TDEF : FLAG_FUNCTION;
 			}
 		}
 		k = 0;
@@ -215,7 +215,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (def[k] == '\0'){
 				j += k;
-				mode = def_check(tempStorage) ? FLAG_FUNCTION : FLAG_DEF;
+				mode = def_check(tempStorage) ? FLAG_DEF : FLAG_FUNCTION;
 			}
 		}
 		k = 0;
@@ -388,7 +388,7 @@ int main(int argC, char**args){
 			discardStr(baseDir);
 			baseDir == NULL;
 		}
-		if (args[start][0]  == '.' && args[start][1] == '/'){
+		if ((args[start][0]  == '.' && args[start][1] == '/') || args[start][0] != '/'){
 			char cwd[256]; 
 			getcwd(cwd, 256);
 			cwd_len = strlen(cwd);
@@ -445,6 +445,7 @@ int main(int argC, char**args){
 	i = 0;
 	for (i = 0; i < f_len; i++){
 		appendStr(baseDir, files[i]);
+		printf("%s\n", files[i]);
 		if (stat(baseDir->string, &status) == -1){
 			printf("file \"%s\" seems to be unavailable\n", baseDir->string);
 			if (read_head == 1) {
@@ -467,7 +468,7 @@ int main(int argC, char**args){
 		} else {
 			read = fopen(baseDir->string, "rb+");
 			if (read == NULL){
-				printf("failed to read file \"%s\".\n", readStr->string);	
+				printf("failed to read file \"%s\".\n", baseDir->string);	
 				continue;
 			}
 			isMain = checkMain(baseDir);

@@ -72,7 +72,7 @@ String* initStr(char* rawStr, size_t rawStrLen){
 String* buildStr(char* pointer, size_t length){
 		String* string  = (String*)malloc(sizeof(struct string));
 		string->maxCapacity = length*1.5+1;
-		string->length = length;
+		string->length = 0;
 		string->string = (char*)malloc(string->maxCapacity);
 		memcpy(string->string, pointer, length);
 		string->length += length;
@@ -131,7 +131,7 @@ int appendNoLen(String* str, char* ptr, size_t max){
 }
 int appendPtr(String* str, char* ptr, size_t ptrLen){
 	if (str->maxCapacity < str->length + ptrLen){
-		if (growStr(str, (str->length+1) / 2)){
+		if (growStr(str, (str->length+ptrLen) / 2)){
 		 	return 1;
 		}
 	}
