@@ -21,7 +21,7 @@
 #define FILE_IND 0
 #define FUNC_IND 1
 #define DEF_IND 2
-// dum dum
+/* dum dum */
 String** files;
 int f_len = 0;
 int f_size = 4;
@@ -32,7 +32,8 @@ int read_only = 0;
 unsigned int cwd_len = 0;
 void grow_arr(int inc){
 	String** n_arr = malloc(sizeof(String*) * (f_size + inc));
-	for (int i = 0; i < f_size; i++){
+	int i = 0;
+	for (i = 0; i < f_size; i++){
 		n_arr[i] = files[i];
 	}
 	f_size += inc;
@@ -55,7 +56,8 @@ void remove_entry(int index){
 	f_len--;
 }
 int has_entry(String* entry){
-	for (int i = 0; i < f_len; i++){
+	int i = 0;
+	for (i = 0; i < f_len; i++){
 		if (strEqual(files[i], entry) == 1){
 			return 1;
 		}
@@ -242,7 +244,7 @@ void makeHeader(FILE* read, FILE* write){
 		}
 		if (tempStorage[j+1] != '\n' && tempStorage[j+1] && mode == FLAG_EMPTY && bracketDepth == 0){
 			mode = FLAG_GLOB;
-			// basically as a failsafe in case other stuff doesn't detect
+			/* basically as a failsafe in case other stuff doesn't detect*/
 		}
 		if (mode != FLAG_INC && mode != FLAG_VAR){
 			while (tempStorage[j] != '\0'){
@@ -264,7 +266,7 @@ void makeHeader(FILE* read, FILE* write){
 					bracketDepth++;
 					if ((mode == FLAG_GLOB || mode == FLAG_EMPTY) && bracketDepth == 1){
 						appendNoLen(toAppend, tempStorage, 512);
-						// sub { by ;
+						/* sub { by ;*/
 						toAppend->string[j] = ';';
 						toAppend->string[j+1] = '\0';
 						toAppend->length = j+1;
@@ -292,14 +294,12 @@ void makeHeader(FILE* read, FILE* write){
 				mode = FLAG_EMPTY;
 			}
 		}else if (mode == FLAG_TDEF){
-			//printf("%s", tempStorage);
 			fputs(tempStorage, write);
 			if (bracketDepth == 0){
 				mode = FLAG_EMPTY;
 			}
 		} else if (mode == FLAG_INC){
 			fputs(tempStorage, write);
-			//mode = FLAG_EMPTY;
 		} else if (mode == FLAG_GLOB){
 			fputs(tempStorage, write);
 		}
@@ -418,7 +418,8 @@ int main(int argC, char**args){
 		printf("there seems to be no files in your input\n");
 		return 0;
 	}
-	for (int i = start; i < argC; i++){
+	int i = 0;
+	for (i = start; i < argC; i++){
 		int currL = strlen(args[i]);
 		String* str = buildStr(args[i], currL);
 		if (has_entry(str) == 0){
@@ -437,12 +438,12 @@ int main(int argC, char**args){
 	appendPtr(baseDir, "/", 1);
 	int isMain = 0;
 	char hasMain = 0;
-	//int open = 0;
 	String* readStr;
 	String* writeStr;
   FILE* read;
 	FILE* write;
-	for (int i = 0; i < f_len; i++){
+	i = 0;
+	for (i = 0; i < f_len; i++){
 		appendStr(baseDir, files[i]);
 		if (stat(baseDir->string, &status) == -1){
 			printf("file \"%s\" seems to be unavailable\n", baseDir->string);
@@ -471,7 +472,6 @@ int main(int argC, char**args){
 			}
 			isMain = checkMain(baseDir);
 			baseDir->string[baseDir->length - 1] = 'h';
-			//writeStr = cloneStr(baseDir);
 			if (isMain == 0 && read_only == 0){
 				write = fopen(baseDir->string, "w+");
 			} else {
@@ -503,7 +503,8 @@ int main(int argC, char**args){
 	}
 	if (hasMain){
 		printf("this should compile your project (in your current directory): \n gcc -o3 -o exec ");
-		for (unsigned int i = 0; i < f_len; i++){
+		unsigned int i = 0;
+		for (i = 0; i < f_len; i++){
 			printf("\"%s\" ", files[i]->string);
 		}
 		printf("\n");
