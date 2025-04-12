@@ -445,7 +445,6 @@ int main(int argC, char**args){
 	i = 0;
 	for (i = 0; i < f_len; i++){
 		appendStr(baseDir, files[i]);
-		printf("%s\n", files[i]);
 		if (stat(baseDir->string, &status) == -1){
 			printf("file \"%s\" seems to be unavailable\n", baseDir->string);
 			if (read_head == 1) {
@@ -503,7 +502,7 @@ int main(int argC, char**args){
 		}
 	}
 	if (hasMain){
-		printf("this should compile your project (in your current directory): \n gcc -o3 -o exec ");
+		printf("this should compile your project (in your current directory): \ngcc -o3 -o exec ");
 		unsigned int i = 0;
 		for (i = 0; i < f_len; i++){
 			printf("\"%s\" ", files[i]->string);
