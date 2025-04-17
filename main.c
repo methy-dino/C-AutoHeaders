@@ -288,10 +288,13 @@ void makeHeader(FILE* read, FILE* write){
 				}
 				if (tempStorage[j] == '/' && tempStorage[j+1] == '/') {
 					mode = SET_BIT(mode, INC_BIT);
+					/* INC_BIT should not be turned on inside checker*/
+					break;
 				}
 					if (tempStorage[j] == '/' && tempStorage[j+1] == '*') {
 						mode = SET_BIT(mode, COM_BIT);
 				}
+				/* it is needed to check if there is a comment started*/
 				if (CHECK_BIT(mode, COM_BIT) && tempStorage[j] == '*' && tempStorage[j+1] == '/'){
 					mode = UNSET_BIT(mode, COM_BIT);
 					fputs(tempStorage, write);
@@ -332,13 +335,23 @@ void checkImports(FILE* read){
 	char tempStorage[512];
 	int j = 0;
 	int k = 0;
+	int com = 0;
 	while (fgets(tempStorage, 511, read)!= NULL){
 		j = 0;
 		while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
 			j++;
 		}
 		k=0;
-		while (tempStorage[j+k] == inc[k]){
+		if (tempStorage[j] == '/' && tempStorage[j+1] == '/') {
+			continue;
+		}
+			if (tempStorage[j] == '*' && tempStorage[j+1] == '/'){
+				com = 0;
+			}
+			if (tempStorage[j] == '/' && tempStorage[j+1] == '*'){
+				com = 1;
+			}
+		while (tempStorage[j+k] == inc[k] && !com){
 			k++;
 			if (inc[k] == '\0'){
 				j += k;
@@ -359,6 +372,15 @@ void checkImports(FILE* read){
 					discardStr(new_entry);
 				}
 			}
+		}
+		while (tempStorage[j] != '\0'){
+			if (tempStorage[j] == '*' && tempStorage[j+1] == '/'){
+				com = 0;
+			}
+			if (tempStorage[j] == '/' && tempStorage[j+1] == '*'){
+				com = 1;
+			}
+			j++;
 		}
 	}
 }
