@@ -297,7 +297,9 @@ void makeHeader(FILE* read, FILE* write){
 				/* it is needed to check if there is a comment started*/
 				if (CHECK_BIT(mode, COM_BIT) && tempStorage[j] == '*' && tempStorage[j+1] == '/'){
 					mode = UNSET_BIT(mode, COM_BIT);
-					fputs(tempStorage, write);
+					if (!CHECK_BIT(mode, FUNCTION_BIT)){
+						fputs(tempStorage, write);
+						}
 				}
 				j++; 
 			}
