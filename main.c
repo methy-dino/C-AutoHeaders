@@ -196,7 +196,18 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (struc[k] == '\0'){
 				j += k;
-				mode = def_check(tempStorage) ? SET_BIT(mode, TDEF_BIT): SET_BIT(mode, FUNCTION_BIT);
+				char recon = 0;
+				k = 0;
+				while(tempStorage[j+k] != '\0'){
+					if (tempStorage[j+k] == '('){
+						recon = 1;
+						break;
+					}
+					k++;
+				}
+				if (recon == 0){
+					mode = def_check(tempStorage) ? SET_BIT(mode, TDEF_BIT): SET_BIT(mode, FUNCTION_BIT);
+				}
 			}
 		}
 		k = 0;
@@ -212,7 +223,18 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (uni[k] == '\0'){
 				j += k;
-				mode = def_check(tempStorage) ? SET_BIT(mode, TDEF_BIT): SET_BIT(mode, FUNCTION_BIT);
+				char recon = 0;
+				k = 0;
+				while(tempStorage[j+k] != '\0'){
+					if (tempStorage[j+k] == '('){
+						recon = 1;
+						break;
+					}
+					k++;
+				}
+				if (recon == 0){
+					mode = def_check(tempStorage) ? SET_BIT(mode, TDEF_BIT): SET_BIT(mode, FUNCTION_BIT);
+				}
 			}
 		}
 		k = 0;
@@ -316,15 +338,15 @@ void makeHeader(FILE* read, FILE* write){
 			if (tempStorage[j-2] != '\\'){
 				mode = RESET;
 			}
-		}else if (CHECK_BIT(mode, TDEF_BIT)){
+		} else if (CHECK_BIT(mode, INC_BIT)){
+			fputs(tempStorage, write);
+			mode = UNSET_BIT(mode, INC_BIT);
+		} else if (CHECK_BIT(mode, TDEF_BIT)){
 			fputs(tempStorage, write);
 			if (bracketDepth == 0){
 				mode = RESET;
 			}
-		} else if (CHECK_BIT(mode, INC_BIT)){
-			fputs(tempStorage, write);
-			mode = UNSET_BIT(mode, INC_BIT);
-		} else if (CHECK_BIT(mode, GLOB_BIT)){
+		}  else if (CHECK_BIT(mode, GLOB_BIT)){
 			fputs(tempStorage, write);
 			mode = RESET;
 		}
@@ -532,7 +554,7 @@ int main(int argC, char**args){
 			}
 					printf("started creating header for %s\n", baseDir->string);
        	  makeHeader(read, write);
-					printf("done creating header for %s\n", baseDir->string);
+					printf("finished creating header for %s\n", baseDir->string);
 			if (write != NULL){
 				fclose(write);
 				write = NULL;
