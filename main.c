@@ -545,30 +545,36 @@ int main(int argC, char**args){
 					hasMain = 1;
 					printf("checking imports from main file\n");
 				} else {
+					baseDir->string[baseDir->length - 1] = 'c';
 					printf("checking imports from file \"%s\" \n", baseDir->string);
+					baseDir->string[baseDir->length - 1] = 'h';
 				}
 				checkImports(read);
 				baseDir->length -= files[i]->length;
 				baseDir->string[baseDir->length] = '\0';
 				continue;
 			}
+					baseDir->string[baseDir->length - 1] = 'c';
 					printf("started creating header for %s\n", baseDir->string);
+					baseDir->string[baseDir->length - 1] = 'h';
        	  makeHeader(read, write);
+					baseDir->string[baseDir->length - 1] = 'c';
 					printf("finished creating header for %s\n", baseDir->string);
-			if (write != NULL){
-				fclose(write);
-				write = NULL;
-			}
-			if (read != NULL){
-				fclose(read);
-				read = NULL;
-			}
-			baseDir->length -= files[i]->length;
-			baseDir->string[baseDir->length] = '\0';
+					baseDir->string[baseDir->length - 1] = 'h';
+					if (write != NULL){
+						fclose(write);
+						write = NULL;
+					}
+					if (read != NULL){
+						fclose(read);
+						read = NULL;
+					}
+					baseDir->length -= files[i]->length;
+					baseDir->string[baseDir->length] = '\0';
 		}
 	}
 	if (hasMain){
-		printf("this should compile your project (in your current directory): \ngcc -o3 -o exec ");
+		printf("this should compile your project (in your current directory): \ngcc -o3 -o exec -Wall -Wextra ");
 		unsigned int i = 0;
 		for (i = 0; i < f_len; i++){
 			printf("\"%s\" ", files[i]->string);
