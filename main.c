@@ -27,8 +27,7 @@
 #define DEF_IND 2
 /* dum dum */
 String** files;
-int f_len = 0;
-int f_size = 4;
+unsigned int f_len = 0, f_size = 4;
 unsigned int confirm = 0;
 unsigned int no_add = 0;
 int read_head = 1;
@@ -60,7 +59,7 @@ void remove_entry(int index){
 	f_len--;
 }
 int has_entry(String* entry){
-	int i = 0;
+	unsigned i = 0;
 	for (i = 0; i < f_len; i++){
 		if (strEqual(files[i], entry) == 1){
 			return 1;
@@ -484,7 +483,7 @@ int main(int argC, char**args){
 		printf("there seems to be no files in your input\n");
 		return 0;
 	}
-	int i = 0;
+	unsigned int i = 0;
 	for (i = start; i < argC; i++){
 		int currL = strlen(args[i]);
 		String* str = buildStr(args[i], currL);
@@ -504,8 +503,6 @@ int main(int argC, char**args){
 	appendPtr(baseDir, "/", 1);
 	int isMain = 0;
 	char hasMain = 0;
-	String* readStr;
-	String* writeStr;
   FILE* read;
 	FILE* write;
 	i = 0;
