@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
-#include "string_debug.h"
+#include "string.h"
 #define FORCE_BREAK 2
 int growStr(String* str, size_t inc){
 	size_t newL;
@@ -568,7 +568,7 @@ size_t evaluateStr(String* str){
 	}
 	return value;
 }
-long strCompare(String* str1, String* str2){
+long long strCompare(String* str1, String* str2){
 	size_t str1Val;
 	size_t str2Val;
 	size_t i;

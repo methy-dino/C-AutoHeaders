@@ -329,7 +329,6 @@ void makeHeader(FILE* read, FILE* write){
 				} else if (tempStorage[j] == '{'){
 					bracketDepth++;
 					def_line = 0;
-					printf("%d MODE\n", mode);
 					if ((mode == RESET) && bracketDepth == 1){
 						if (first_open == 0){
 							appendNoLen(toAppend, tempStorage, 512);
