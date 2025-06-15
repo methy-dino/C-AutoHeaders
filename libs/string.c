@@ -56,13 +56,11 @@ String* emptyStr(size_t allocSize){
 /* converts a null terminated char* to a String */
 String* ptrToStr(char* ptr){
 	String* toRet;
-	printf("entrada \"%s\" %u\n", ptr, strlen(ptr));
 	toRet = emptyStr(strlen(ptr)+1);
 	if (toRet == NULL){
 		return NULL;
 	}
 	toRet->length = toRet->maxCapacity-1;
-	printf("%d WHAR\n", toRet->length);
 	memcpy(toRet->string, ptr, toRet->maxCapacity);
 	return toRet;
 }
@@ -301,12 +299,9 @@ void removeStr(String* str, String* subStr){
 				break;
 			}
 		}
-		printf("%c %d becomes %c %d\n",str->string[i-removed],str->string[i-removed], str->string[i], str->string[i]);	
 		str->string[i-removed] = str->string[i];	
 	}
-	printf("\"%s\" %d \n", str->string, str->length);
 	str->length -= removed;
-	printf("\"%s\" %d \n", str->string, str->length);
 	str->string[str->length] = '\0';
 }
 void removeFirstStr(String* str, String* subStr){
@@ -466,7 +461,6 @@ void replaceFirstStr(String* str, String* target, String* sub){
 				}
 				str->length += sub->length - target->length;
 				str->string[str->length] = '\0';
-				printf("CHAR \"%c\" %d\n", str->string[str->length-1], str->string[str->length-1]);
 				for (k = str->length-1; k > i+sub->length-1; k--){
 					str->string[k] = str->string[k - sub->length + target->length];
 				}
