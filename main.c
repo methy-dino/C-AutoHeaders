@@ -1,5 +1,6 @@
 #include <stdlib.h>
-#include <stdio.h> 
+#include <stdio.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/time.h>
@@ -169,16 +170,27 @@ void makeHeader(FILE* read, FILE* write){
 	int k = 0;
 	/*int com_start = 0;*/
 	int mode = 0;
+	char first_open = 0;
+	char def_line  = 0;
 	int bracketDepth = 0;
 	String* toAppend = emptyStr(32);
-	char tempStorage[512];
-    while (fgets(tempStorage, 511, read)!= NULL){	
+	char tmpStorage[512];
+	char tmpStorage2[512];
+	char* tempStorage = tmpStorage;
+	char* prev = tmpStorage2;
+    while (1){
+			def_line = 0;
+			first_open = 0;
+			prev = (char*) ((uintptr_t) prev ^ (uintptr_t)tempStorage);
+			tempStorage = (char*) ((uintptr_t) tempStorage ^ (uintptr_t) prev);
+			prev = (char*) ((uintptr_t) prev ^ (uintptr_t)tempStorage);
+		if (fgets(tempStorage, 511, read) == NULL){
+			break;
+		}
 		j = 0;
 		toAppend->length = 0;
 		toAppend->string[0] = '\0';
-    	while(tempStorage[j] == ' ' || tempStorage[j] == '	'){
-			j++;
-		}
+		while(tempStorage[j] == ' ' || tempStorage[j] == '	'){j++;}
 		/*if (bracketDepth == 0 && !(CHECK_BIT(mode, COM_BIT))){
 			mode = RESET;
 		}*/
@@ -187,15 +199,20 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (type[k] == '\0'){
 				j += k;
-				mode = def_check(tempStorage) ? SET_BIT(mode, TDEF_BIT): SET_BIT(mode, FUNCTION_BIT);
+				if(def_check(tempStorage)){
+					 mode = SET_BIT(mode, TDEF_BIT);
+				} else {	
+					 mode = SET_BIT(mode, FUNCTION_BIT);
+				}
 			}
 		}
 		k = 0;
+		while(tempStorage[j] == ' ' || tempStorage[j] == '	'){j++;}
 		while (tempStorage[j+k] == struc[k] && mode == RESET){
 			k++;
 			if (struc[k] == '\0'){
 				j += k;
-				char recon = 0;
+				unsigned short recon = 0;
 				k = 0;
 				while(tempStorage[j+k] != '\0'){
 					if (tempStorage[j+k] == '('){
@@ -205,7 +222,12 @@ void makeHeader(FILE* read, FILE* write){
 					k++;
 				}
 				if (recon == 0){
-					mode = def_check(tempStorage) ? SET_BIT(mode, TDEF_BIT): SET_BIT(mode, FUNCTION_BIT);
+					if(def_check(tempStorage)){
+						mode = SET_BIT(mode, TDEF_BIT);
+					} else {
+						mode = SET_BIT(mode, FUNCTION_BIT);
+					}
+					def_line = 1;
 				}
 			}
 		}
@@ -214,7 +236,12 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (enu[k] == '\0'){
 				j += k;
-				mode = def_check(tempStorage) ? SET_BIT(mode, TDEF_BIT): SET_BIT(mode, FUNCTION_BIT);
+				if(def_check(tempStorage)){
+					mode = SET_BIT(mode, TDEF_BIT);
+				} else {
+					mode = SET_BIT(mode, FUNCTION_BIT);
+				}
+					def_line = 1;
 			}
 		}
 		k = 0;
@@ -222,7 +249,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (uni[k] == '\0'){
 				j += k;
-				char recon = 0;
+				unsigned short recon = 0;
 				k = 0;
 				while(tempStorage[j+k] != '\0'){
 					if (tempStorage[j+k] == '('){
@@ -232,7 +259,12 @@ void makeHeader(FILE* read, FILE* write){
 					k++;
 				}
 				if (recon == 0){
-					mode = def_check(tempStorage) ? SET_BIT(mode, TDEF_BIT): SET_BIT(mode, FUNCTION_BIT);
+					if(def_check(tempStorage)){
+						mode = SET_BIT(mode, TDEF_BIT);
+					} else {
+						mode = SET_BIT(mode, FUNCTION_BIT);
+					}
+						def_line = 1;
 				}
 			}
 		}
@@ -271,11 +303,15 @@ void makeHeader(FILE* read, FILE* write){
 			}
 		} else if (tempStorage[j] == '/' && tempStorage[j+1] == '*') {
 			mode = SET_BIT(mode, COM_BIT);
-		} else if (tempStorage[j+1] != '\n' && tempStorage[j+1] && mode == RESET && bracketDepth == 0){
+		} /*else if (tempStorage[j+1] != '\n' && tempStorage[j+1] && mode == RESET && bracketDepth == 0){
 			mode = SET_BIT(mode, GLOB_BIT);
-			/* basically as a failsafe in case other stuff doesn't detect*/
-		}
+			* basically as a failsafe in case other stuff doesn't detect
+			---------- NOT FUNCTIONAL AS OF CURRENT ARCHITECTURE ----------
+		}*/
 		if (!CHECK_BIT(mode, INC_BIT)){
+			if (tempStorage[j] == '{'){
+				first_open = 1;
+			}
 			while (tempStorage[j] != '\0'){
 				if (tempStorage[j] == '=' && !CHECK_FN_COM(mode)){
 					j--;
@@ -292,13 +328,19 @@ void makeHeader(FILE* read, FILE* write){
 					break;
 				} else if (tempStorage[j] == '{'){
 					bracketDepth++;
-					if ((CHECK_BIT(mode, GLOB_BIT)|| mode == RESET) && bracketDepth == 1){
-						appendNoLen(toAppend, tempStorage, 512);
+					def_line = 0;
+					printf("%d MODE\n", mode);
+					if ((mode == RESET) && bracketDepth == 1){
+						if (first_open == 0){
+							appendNoLen(toAppend, tempStorage, 512);
+						} else {
+							appendNoLen(toAppend, prev, 512);
+						}
 						/* sub { by ;*/
-						toAppend->string[j] = ';';
-						toAppend->string[j+1] = '\0';
-						toAppend->length = j+1;
-						appendPtr(toAppend, "\n", 1);
+							while (toAppend->string[toAppend->length-1] == ' ' || toAppend->string[toAppend->length-1] == '\n' || toAppend->string[toAppend->length-1] == '	' || toAppend->string[toAppend->length-1] == '{'){
+								toAppend->length--;
+							}
+						appendPtr(toAppend, ";\n", 2);
 						if (fn_check(toAppend->string)){
 							fputs(toAppend->string, write);
 						}
@@ -308,7 +350,7 @@ void makeHeader(FILE* read, FILE* write){
 					bracketDepth--;
 				}
 				if (tempStorage[j] == '/' && tempStorage[j+1] == '/') {
-					mode = SET_BIT(mode, INC_BIT);
+					if(!CHECK_BIT(mode, FUNCTION_BIT)) {mode = SET_BIT(mode, INC_BIT);}
 					/* INC_BIT should not be turned on inside checker*/
 					break;
 				}
@@ -320,13 +362,13 @@ void makeHeader(FILE* read, FILE* write){
 					mode = UNSET_BIT(mode, COM_BIT);
 					if (mode == RESET){
 						fputs(tempStorage, write);
-						}
+					}
 				}
 				j++; 
 			}
 		}
 		if (CHECK_BIT(mode, FUNCTION_BIT)){
-			if (bracketDepth == 0){
+			if (bracketDepth == 0 && !(def_line)){
 				mode = RESET;
 			}
 		} else if (CHECK_BIT(mode, COM_BIT)){
@@ -342,7 +384,7 @@ void makeHeader(FILE* read, FILE* write){
 			mode = UNSET_BIT(mode, INC_BIT);
 		} else if (CHECK_BIT(mode, TDEF_BIT)){
 			fputs(tempStorage, write);
-			if (bracketDepth == 0){
+			if (bracketDepth == 0 && !(def_line)){
 				mode = RESET;
 			}
 		}  else if (CHECK_BIT(mode, GLOB_BIT)){
