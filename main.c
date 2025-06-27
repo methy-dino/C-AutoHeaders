@@ -145,7 +145,7 @@ void import_entry(String* newEntry){
 	if (CHECK_BIT(confirm, FILE_IND)){
 		unsigned int dot = lastIndexOfChar(newEntry, '.', 0);
 		newEntry->string[dot] = '\0';
-		printf("found new file:\n%s\ndo you wish to include it in the header generation? (y/n) ", newEntry->string);
+		printf("found new file:\n\"%s\"\ndo you wish to include it in the header generation? (y/n) ", newEntry->string);
 		fflush(stdout);
 		newEntry->string[dot] = '.';
 		if (confirm_prompt(FILE_IND) == 1){
@@ -191,9 +191,6 @@ void makeHeader(FILE* read, FILE* write){
 		toAppend->length = 0;
 		toAppend->string[0] = '\0';
 		while(tempStorage[j] == ' ' || tempStorage[j] == '	'){j++;}
-		/*if (bracketDepth == 0 && !(CHECK_BIT(mode, COM_BIT))){
-			mode = RESET;
-		}*/
 		k = 0;
 		while (tempStorage[j+k] == type[k] && mode == RESET){
 			k++;
@@ -453,7 +450,7 @@ int main(int argC, char**args){
 	int start = 1;
 	int is_spef = 0;
 
-	while (is_spef == 0 && argC > start){
+	while (argC > start){
 		if (strcmp(args[start], "confirm-file") == 0){
 			confirm = confirm | (1 << FILE_IND);
 			start++;
@@ -506,11 +503,24 @@ int main(int argC, char**args){
 		}
 		cwd_len = baseDir->length + 1;
 		start++;
-		} else if (strcmp(args[start], "read-only") == 0) {
+		} else if (strcmp(args[start], "read-only") == 0 || strcmp(args[start], "-ro") == 0) {
 			read_only = 1;
 			start++;
 		} else {
-			is_spef = 1;
+			unsigned currL = strlen(args[start]);
+			String* str = buildStr(args[start], currL);
+			if (has_entry(str) == 0){
+				if (args[start][currL-1] == 'c' && args[start][currL-2] == '.'){
+					add_entry(str);
+				} else {
+					printf("file \"%s\" is not a C file\n", args[start]);
+					discardStr(str);
+				}
+			} else {
+				printf("file \"%s\" specified twice\n",args[start]);
+				discardStr(str);
+			}
+			start++;
 		}
 	}
 	if (baseDir == NULL){
@@ -520,25 +530,8 @@ int main(int argC, char**args){
 		baseDir = buildStr(cwd,cwd_len);
 		cwd_len++;
 	}
-	if (argC == start){
-		printf("there seems to be no files in your input\n");
-		return 0;
-	}
 	unsigned int i = 0;
 	for (i = start; i < argC; i++){
-		int currL = strlen(args[i]);
-		String* str = buildStr(args[i], currL);
-		if (has_entry(str) == 0){
-	    if (args[i][currL-1] == 'c' && args[i][currL-2] == '.'){
-				add_entry(str);
-		  } else {
-  			printf("file \"%s\" is not a C file\n", args[i]);
-				discardStr(str);
-		  }
-		} else {
-			printf("file \"%s\" specified twice\n",args[i]);
-			discardStr(str);
-		}
 	}
 	struct stat status;
 	appendPtr(baseDir, "/", 1);
