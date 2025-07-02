@@ -449,7 +449,10 @@ int main(int argC, char**args){
 	files = (String**) malloc(sizeof(String*)*4);
 	int start = 1;
 	int is_spef = 0;
-
+	if (argC == 1){
+		printf("run with -h for help\n");
+		return 0;
+	}
 	while (argC > start){
 		if (strcmp(args[start], "confirm-file") == 0){
 			confirm = confirm | (1 << FILE_IND);
@@ -460,7 +463,7 @@ int main(int argC, char**args){
 		} else if (strcmp(args[start], "confirm-def") == 0){
 			confirm = SET_BIT(confirm, DEF_IND);
 			start++;
-		} else if (strcmp(args[start], "confirm-all") == 0){
+		} else if (strcmp(args[start], "confirm-all") == 0 || strcmp(args[start], "-ca") == 0){
 			confirm = confirm | (1 << FILE_IND) | (1 << FUNC_IND) | (1 << DEF_IND);
 			start++;
 		} else if (strcmp(args[start], "no-add-file") == 0){
@@ -505,6 +508,11 @@ int main(int argC, char**args){
 		start++;
 		} else if (strcmp(args[start], "read-only") == 0 || strcmp(args[start], "-ro") == 0) {
 			read_only = 1;
+			start++;
+		} else if(strcmp(args[start], "-h") == 0){
+			printf("run autoHead using the following architecture:\nautoHead <.c file name|specifier>\nthe specifiers of autoHead are the following:\nread-only (-ro)\nWill only read the entries and imports of the selected C files, useful for those looking for the compilation suggestion tool.\nread-head (no-read-head)\nenables and disables (default) head file checking if a respective .c file is not present, respectively\n");
+			printf("confirm-all (-ca)\nprompts user for comfirmation in each add that autoHead would put in header files, and also for including new headers found\nconfirm-(file|func|def)\nprompts user for confirmation on adding new files to generation, new functions for generations, and new definitions, such as typedefs.\nno-add-(file|func|def)\nwill not add files, functions or definitions, respectively, will change default response to no if confirms are active\n");
+			printf("root-dir\nchanges the root directory of autoHead.\n");
 			start++;
 		} else {
 			unsigned currL = strlen(args[start]);
