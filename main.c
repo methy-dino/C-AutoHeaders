@@ -270,7 +270,7 @@ void makeHeader(FILE* read, FILE* write){
 			k++;
 			if (def[k] == '\0'){
 				j += k;
-				mode = def_check(tempStorage) ? SET_BIT(mode, TDEF_BIT): SET_BIT(mode, FUNCTION_BIT);
+				mode = def_check(tempStorage) ? SET_BIT(mode, DEF_BIT): SET_BIT(mode, FUNCTION_BIT);
 			}
 		}
 		k = 0;
@@ -310,7 +310,7 @@ void makeHeader(FILE* read, FILE* write){
 				first_open = 1;
 			}
 			while (tempStorage[j] != '\0'){
-				if (tempStorage[j] == '=' && !CHECK_FN_COM(mode)){
+				if (tempStorage[j] == '=' && !CHECK_FN_COM(mode) && !CHECK_BIT(mode, DEF_BIT)){
 					j--;
 					while (tempStorage[j] == '	' || tempStorage[j] == ' '){
 						j--;
