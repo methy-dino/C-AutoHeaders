@@ -4,13 +4,8 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
-
+#include "string.h"
 #define FORCE_BREAK 2
-typedef struct string {
-	char* string;
-	size_t length;
-	size_t maxCapacity;
-} String;
 int growStr(String* str, size_t inc);
 int growStrClean(String* str, size_t inc);
 /* creates an empty (length 0, string[0] == '\0') string with allocSize */
@@ -54,6 +49,8 @@ void replaceChar(String* str, char target, char sub);
 void replaceStr(String* str, String* target, String* sub);
 void replaceFirstStr(String* str, String* target, String* sub);
 void replaceLastStr(String* str, String* target, String* sub);
+char insertChar(String* str, char ch, size_t index);
+char insertStr(String* str, String* str2, size_t index);
 /* returns 1 if the strings are equal, otherwise returns 0.
  * does not compare after String.length, it may contain trash data after that.
  * trash data is non-zeroed and unsanitized.
@@ -67,10 +64,10 @@ size_t hashStr(void* str);
 String* joinStr(String** strings, size_t len, String* separator);
 /* splits the String* str by String* divisor, writing the quantity of strings after the split to int* len. */
 String* splitByStr(String* str, String* divisor, size_t* len);
-/* reduces the String* str's memory allocation by reduction. */
-int reduceStr(String* str, size_t reduction);
+/* reduces the String* str's memory allocation by reduction, assumes reduction wont decrease size to  <= 0 */
+int reduceStr(String* str, const size_t reduction);
 /* sets the String* str's memory allocation to be exact with it's current contents*/
-void trimEnd(String* str);
+#define trimEnd(str) reduceStr(str, str->maxCapacity - str->length-1);
 /* it is a void* to easier integration to libs with need of free functions.
  * frees the String* str memory */
 void discardStr(void* str);
