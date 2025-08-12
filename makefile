@@ -1,4 +1,7 @@
-main: libs
+main: libstr
 	gcc -o AutoHead main.c -L. -l:libs/libstr.a
-libs:
+libstr:
 	@$(MAKE) -C libs
+
+clean:
+	rm -rf *.o

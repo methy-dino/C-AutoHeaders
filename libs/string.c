@@ -88,7 +88,7 @@ String* buildStr(char* pointer, size_t length){
 }
 /* appends only part of a pointer, determined by start and end, does not stop at null terminators.*/
 void appendSubPtr(String* str, char* ptr, size_t start, size_t end){
-	if (str->maxCapacity < str->length + (end-start)+1){
+	if (str->maxCapacity <= str->length + (end-start)+1){
 		 growStr(str, (end-start) * 1.5 + 2);
 	}	
 	memcpy(&str->string[str->length], &ptr[start], end - start);
@@ -96,7 +96,7 @@ void appendSubPtr(String* str, char* ptr, size_t start, size_t end){
 	str->string[str->length] = '\0';
 }
 int prependSubPtr(String* str, char* ptr, size_t start, size_t end){
-	if (str->maxCapacity < str->length + (end-start)+1){
+	if (str->maxCapacity <= str->length + (end-start)+1){
 		if (growStr(str, (end-start) * 1.5 + 2)){
             return 1;    
         }
@@ -149,7 +149,7 @@ int appendNoLen(String* str, char* ptr, size_t max){
 	return 0;
 }
 int appendPtr(String* str, char* ptr, size_t ptrLen){
-	if (str->maxCapacity < str->length + ptrLen){
+	if (str->maxCapacity <= str->length + ptrLen){
 		if (growStr(str, (str->length+1) / 2)){
 		 	return 1;
 		}
@@ -160,7 +160,7 @@ int appendPtr(String* str, char* ptr, size_t ptrLen){
 	return 0;
 }
 int prependPtr(String* str, char* ptr, size_t ptrLen){
-	if (str->maxCapacity < str->length + ptrLen){
+	if (str->maxCapacity <= str->length + ptrLen){
 		if (growStr(str, ptrLen * 1.5 + 2)){
 			return 1;    
 		}       
@@ -172,7 +172,7 @@ int prependPtr(String* str, char* ptr, size_t ptrLen){
 	return 0;
 }
 void appendHeapPtr(String* str, char* ptr, size_t ptrLen){
-	if (str->maxCapacity < str->length + ptrLen){
+	if (str->maxCapacity <= str->length + ptrLen){
 		 growStr(str, ptrLen * 1.5 + 1);
 	}
 	memcpy(&str->string[str->length], ptr, ptrLen);
@@ -183,7 +183,7 @@ void appendHeapPtr(String* str, char* ptr, size_t ptrLen){
 
 int appendStr(String* str, String* toAppend){
 	/* avoid unnecessary grow checks */
-	if (str->maxCapacity < str->length + toAppend->length){
+	if (str->maxCapacity <= str->length + toAppend->length){
 		if (growStr(str, toAppend->length * 1.5)){
 			return 1;
 		}
@@ -195,7 +195,7 @@ int appendStr(String* str, String* toAppend){
 }
 
 String* concatStr(String* str, String* toAppend){
-	if (str->maxCapacity < str->length + toAppend->length){
+	if (str->maxCapacity <= str->length + toAppend->length){
 	 	if (growStr(str, toAppend->length * 1.5)){
 			return NULL;		 
 	 	}

@@ -6,6 +6,12 @@
 #include <string.h>
 #include "string.h"
 #define FORCE_BREAK 2
+typedef struct string {
+	char* string;
+	size_t length;
+	size_t maxCapacity;
+} String;
+
 int growStr(String* str, size_t inc);
 int growStrClean(String* str, size_t inc);
 /* creates an empty (length 0, string[0] == '\0') string with allocSize */
